@@ -1,0 +1,2117 @@
+from asyncore import read
+import gdal
+import glob
+import matplotlib.colors as colors
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
+from zipfile import ZipFile
+from os.path import join
+from glob import iglob
+from pathlib import Path
+import pandas as pd
+import numpy as np
+import subprocess
+import sys
+import os
+from PIL import Image
+sys.path.append("") # import of the environment requested for SNAP -- Please INSERT THE PROPER PATH OF THE ENVIRONMENT
+sys.path.append("") # import of the libraries for the environment -- Please INSERT THE PROPER PATH 
+sys.path.append("") # import of snappy, the module for interacting with SNAP Java API -- Please INSERT THE PROPER PATH
+import snappy
+from snappy import Product, ProductIO, ProductUtils, GPF, HashMap, jpy
+from lxml import etree as et
+
+# COMPLETE WORKFLOW TO OBTAIN DISPLACEMENT MAPS IN LOS AND 2 DIRECTIONS (E-W COMPONENT AND VERTICAL COMPONENTS) USING DINSAR ON SENTINEL-1 AND WITH SNAP OPERATORS
+# THE TOOL IS COMPLETELY AUTOMATHIC. THE ONLY PARAMETERS TO INSERT MANUALLY ARE:
+# - Path Master / Slave for both Ascending / Descending orbits
+# - Path of the directories where to put the products for ascending, descending, and final products
+# - Selection of the Area of Interest (AOI)
+# - In "INTERFEROGRAM FORMATION", the parameter "cohwinaz"
+# - In "GOLDSTEIN PHASE FILTER", the parameters "fftsizestring" and "windowsizestring"; "coherenceThreshold" and "useCoherenceMask" are setted for default, but they can be changed
+
+#INTERFEROGRAM FORMATION: INSERT HERE THE VALUE OF Coherence Window Azimuth and Range
+cohwiaz =  # MAXIMUM ADVICED SIZE: 200
+cohwirg =  # MAXIMUM ADVICED SIZE: 250; BEST VALUES BETWEEN 10 AND 200
+
+# GOLDSTEIN PHASE FILTERING
+fftsizestring =   # Choose between 32, 64, 128 and 256
+windowsizestring =  # Choose between 3, 5 and 7
+coherencethreshold = # MAXIMUM ADVICED RANGE: 0.02 - 0.5
+usecoherencemask = "" # Choose between "true" or "false"
+
+# Opening of the products and of SNAPhU, the Phase Unwrapping algorithm implemented in SNAP.
+
+path_master_ascending = "" #Insert HERE the path of the data for the master ascending product
+master_ascending = ProductIO.readProduct(path_master_ascending)
+
+path_slave_ascending = "" #Insert HERE the path of the data for the slave ascending product
+slave_ascending = ProductIO.readProduct(path_slave_ascending)
+
+path_master_descending = "" #Insert HERE the path of the data for the master descending product
+master_descending = ProductIO.readProduct(path_master_descending)
+
+path_slave_descending = "" #Insert HERE the path of the data for the slave descending product
+slave_descending = ProductIO.readProduct(path_slave_descending)
+
+path_snaphu = "" # path of where snaphu.exe is
+
+path_products_ascending = Path("") # path of the folder in which the ascending products will be written
+path_products_descending = Path("") # path of the folder in which the descending products will be written
+final_path = Path("") # path of the folder in which put the final product of the 2D displacement
+
+path_graph_enhanced_spectral_diversity = "" #path of where Ehanced Spectral Diversity graph .xml file is
+graph_enhanced_spectral_diversity = r"" #insert in quotes the same path of path_enhanced_spectral_diversity
+
+path_graph_enhanced_spectral_diversity_iw1 = "" #path of where Ehanced Spectral Diversity graph .xml file is
+graph_enhanced_spectral_diversity_iw1 = r"" #insert in quotes the same path of path_enhanced_spectral_diversity
+
+path_graph_enhanced_spectral_diversity_iw2 = "" #path of where Ehanced Spectral Diversity graph .xml file is
+graph_enhanced_spectral_diversity_iw2 = r"" #insert in quotes the same path of path_enhanced_spectral_diversity
+
+path_graph_subset = "" #path of where Subset graph .xml file is
+graph_subset = r"" #insert in quotes the same path of path_graph_subset
+
+# Reading of the bands of the products
+band_m_ascending = ""
+for i in list(master_ascending.getBandNames()):
+    band_m_ascending = band_m_ascending + i + ","
+
+band_s_ascending = ""
+for j in list(slave_ascending.getBandNames()):
+    band_s_ascending = band_s_ascending + j + ','
+
+
+
+band_m_descending = ""
+for i in list(master_descending.getBandNames()):
+    band_m_descending = band_m_descending + i + ","
+
+band_s_descending = ""
+for j in list(slave_descending.getBandNames()):
+    band_s_descending = band_s_descending + j + ','
+
+
+
+if master_ascending:
+    print(".\n.\nAscending master product read correctly!\n.\n.")
+else:
+    print(".\n.\nERROR: Ascending master product reading failed.\n.\n.")
+
+
+if slave_ascending:
+    print(".\n.\nAscending slave product read correctly!\n.\n.")
+else:
+    print(".\n.\nERROR: Ascending slave product reading failed.\n.\n.")
+
+
+
+if master_descending:
+    print(".\n.\nDescending master product read correctly!\n.\n.")
+else:
+    print(".\n.\nERROR: Descending master product reading failed.\n.\n.")
+
+
+if slave_descending:
+    print(".\n.\nDescending slave product read correctly!\n.\n.")
+else:
+    print(".\n.\nERROR: Descending slave product reading failed.\n.\n.")
+
+
+
+
+
+#Definire AOI coordinates -- DECIMAL COORDINATES (FORMAT: 12.345)
+max_lon_aoi = 22.489
+max_lat_aoi = 39.885
+min_lon_aoi = 21.957
+min_lat_aoi = 39.542
+
+
+aoi = np.array([min_lon_aoi, max_lat_aoi, max_lon_aoi, min_lat_aoi])
+
+
+#Define minimum dimension of the data -- ASCENDING ORBIT
+def get_min_max(current, min_value, max_value):
+	if current < min_value:
+		min_value = current
+	if current > max_value:
+		max_value = current
+	return [min_value, max_value]
+
+def get_extent(product):
+	# Get corner coordinates of the ESA SNAP product (get extent)
+	# int step - the step given in pixels
+	step = 1
+	min_longitude = 999.99
+
+	position = ProductUtils.createGeoBoundary(master_ascending, step)
+
+	max_longitude = -min_longitude
+	min_latitude = min_longitude
+	max_latitude = max_longitude
+	for element in position:
+		try:
+			longitude = element.getLon()
+			[min_longitude, max_longitude] = get_min_max(longitude, min_longitude, max_longitude)
+		except(NameError):
+			print(NameError)
+			pass
+		try:
+			latitude = element.getLat()
+			[min_latitude, max_latitude] = get_min_max(latitude, min_latitude, max_latitude)
+		except(NameError):
+			print(NameError)
+			pass
+	return [min_longitude, max_longitude, min_latitude, max_latitude]
+
+def find_nearest(array, value):
+	distance_lat = []
+	for x in array:
+		distance = abs(x - value)
+		distance_lat.append(distance)
+	return distance_lat.index(min(distance_lat))
+
+def find_nearest_value(array, value):
+	distances = []
+	for x in array:
+		distance = abs(x - value)
+		distances.append(distance)
+		min_dist = min(distances)
+		answ = abs(value-min_dist)
+	return answ
+
+
+#Repeat for slave
+def get_min_max(current, min_value, max_value):
+	if current < min_value:
+		min_value = current
+	if current > max_value:
+		max_value = current
+	return [min_value, max_value]
+
+def get_extent(product):
+	# Get corner coordinates of the ESA SNAP product (get extent)
+	# int step - the step given in pixels
+	step = 1
+	min_longitude = 999.99
+
+	position = ProductUtils.createGeoBoundary(slave_ascending, step)
+
+	max_longitude = -min_longitude
+	min_latitude = min_longitude
+	max_latitude = max_longitude
+	for element in position:
+		try:
+			longitude = element.getLon()
+			[min_longitude, max_longitude] = get_min_max(longitude, min_longitude, max_longitude)
+		except(NameError):
+			print(NameError)
+			pass
+		try:
+			latitude = element.getLat()
+			[min_latitude, max_latitude] = get_min_max(latitude, min_latitude, max_latitude)
+		except(NameError):
+			print(NameError)
+			pass
+	return [min_longitude, max_longitude, min_latitude, max_latitude]
+
+def find_nearest(array, value):
+	distance_lat = []
+	for x in array:
+		distance = abs(x - value)
+		distance_lat.append(distance)
+	return distance_lat.index(min(distance_lat))
+
+def get_value(array, ind):
+	value = []
+	for x in array:
+		if array.index(x) == ind:
+			value.append(x)
+	return value
+		
+
+array_paths_products = [path_master_ascending, path_slave_ascending] 
+for product in array_paths_products:
+    array_coordinates_product = get_extent(product)
+
+
+#Division of the data in subswaths and bursts
+max_longitude = array_coordinates_product[1]
+min_longitude = array_coordinates_product[0]
+max_latitude = array_coordinates_product[3]
+min_latitude = array_coordinates_product[2]
+
+d_lon = (abs(max_longitude - min_longitude)/3)
+d_lat = (abs(max_latitude - min_latitude)/9)
+
+
+longitude = [] #swath in longitude
+i = np.arange(0, 4)
+for x in i:
+	point_grid_lon = min_longitude + d_lon * x
+	longitude.append(point_grid_lon)
+
+latitude = [] #burst in latitude
+j = np.arange(0, 10)
+for x in j:
+	point_grid_lat = min_latitude + d_lat * x
+	latitude.append(point_grid_lat)
+
+
+
+#Test of existence of the AOI in the data
+if max_lon_aoi < max_longitude:
+	True
+else:
+	raise Exception("The AOI is not contained in the product.")
+
+if min_lon_aoi > min_longitude:
+	True
+else:
+	raise Exception("The AOI is not contained in the product.")
+
+if max_lat_aoi < max_latitude:
+	True
+else:
+	raise Exception("The AOI is not contained in the product.")
+if min_lat_aoi > min_latitude:
+	True
+else:
+	raise Exception("The AOI is not contained in the product.")
+
+
+
+#Minimum distance in index
+min_distance_latitude_index1 = find_nearest(latitude, min_lat_aoi)
+min_distance_latitude_index2 = find_nearest(latitude, max_lat_aoi)
+min_distance_longitude_index1 = find_nearest(longitude, min_lon_aoi)
+min_distance_longitude_index2 = find_nearest(longitude, max_lon_aoi)
+
+min_distance_longitude1_array = get_value(longitude, min_distance_longitude_index1)
+min_distance_longitude2_array = get_value(longitude, min_distance_longitude_index2)
+min_distance_latitude1_array = get_value(latitude, min_distance_latitude_index1)
+min_distance_latitude2_array = get_value(latitude, min_distance_latitude_index2)
+
+for x in min_distance_longitude1_array:
+	min_distance_longitude1 = x
+	
+for y in min_distance_longitude2_array:
+	min_distance_longitude2 = y
+	
+for z in min_distance_latitude1_array:
+	min_distance_latitude1 = z
+	
+for j in min_distance_latitude2_array:
+	min_distance_latitude2 = j
+
+
+#Burst selection
+if min_distance_latitude1 < min_lat_aoi:
+	if min_distance_latitude_index1 == 0:
+		first_burst_index = 1
+	else:
+		first_burst_index = min_distance_latitude_index1
+
+else:
+	first_burst_index = min_distance_latitude_index1 + 1
+
+
+
+if min_distance_latitude2 < max_lat_aoi:
+	last_burst_index = min_distance_latitude_index2
+else:
+	last_burst_index = min_distance_latitude_index2 + 1
+	if min_distance_latitude_index2 == 9:
+		last_burst_index == 9
+
+
+swath1 = 999
+swath2 = 999
+
+# Swath selection
+if min_distance_longitude1 < min_lon_aoi:
+	swath1 = min_distance_longitude_index1 + 1
+	if min_distance_longitude_index1 == 3:
+		swath1 = 3
+else:
+	swath1 = min_distance_longitude_index1
+	if min_distance_longitude_index1 == 0:
+		swath1 == 1
+
+
+if min_distance_longitude2 > max_lon_aoi:
+	swath2 = min_distance_longitude_index2
+	if min_distance_longitude_index2 == 3:
+		swath2 == 3
+	if min_distance_longitude_index2 == 0:
+		swath2 == 1
+
+else:
+	swath2 = min_distance_longitude_index2 + 1
+	if min_distance_longitude_index2 == 3:
+		swath2 = 3      
+
+
+if swath1 == swath2:
+     print("SAME SUBSWATH")
+else:
+     print("DIFFERENT SUBSWATHS")
+
+
+#TOPSAR-Split ascending -- Splits the bursts requested by the user from the rest of the product. The user must choose the number for the first and last burst, the polarisation and the subswath
+if swath1 == swath2:
+    parameters_splitm_ascending = HashMap()
+    parameters_splitm_ascending.put("firstBurstIndex", str(first_burst_index))
+    parameters_splitm_ascending.put("lastBurstIndex", str(last_burst_index))
+    parameters_splitm_ascending.put("selectedPolarisations", "VV")
+    parameters_splitm_ascending.put("subswath", "IW"+str(swath1))
+    split_m_ascending = GPF.createProduct("TOPSAR-Split", parameters_splitm_ascending, master_ascending)
+    
+    if split_m_ascending:
+        print(".\n.\nTOPSAR-Split master ascending performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: TOPSAR-Split performance master ascending failed.\n.\n.")
+
+    #TOPSAR-Split slave ascending
+    parameters_splits_ascending = HashMap()
+    parameters_splits_ascending.put("firstBurstIndex",  str(first_burst_index))
+    parameters_splits_ascending.put("lastBurstIndex", str(last_burst_index))
+    parameters_splits_ascending.put("selectedPolarisations", "VV")
+    parameters_splits_ascending.put("subswath", "IW"+str(swath1))
+    split_s_ascending = GPF.createProduct("TOPSAR-Split", parameters_splits_ascending, slave_ascending)
+   
+    if split_s_ascending:
+        print(".\n.\nTOPSAR-Split slave ascending performed correctly!\n.\n.") 
+    else:
+        print(".\n.\nERROR: TOPSAR-Split slave ascending performance failed.\n.\n.")
+
+else:
+    #REPETITION FOR BOTH SUBSWATHS
+    #TOPSAR-Split master ascending (1)
+    parameters_splitm_ascending = HashMap()
+    parameters_splitm_ascending.put("firstBurstIndex", str(first_burst_index))
+    parameters_splitm_ascending.put("lastBurstIndex", str(last_burst_index))
+    parameters_splitm_ascending.put("selectedPolarisations", "VV")
+    parameters_splitm_ascending.put("subswath", "IW"+str(swath1))
+    split_m_ascending_iw1 = GPF.createProduct("TOPSAR-Split", parameters_splitm_ascending, master_ascending)
+
+    if split_m_ascending_iw1:
+        print(".\n.\nTOPSAR-Split master ascending (1) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: TOPSAR-Split performance master ascending (1) failed.\n.\n.")
+
+    #TOPSAR-Split slave ascending (1)
+    parameters_splits_ascending = HashMap()
+    parameters_splits_ascending.put("firstBurstIndex",  str(first_burst_index))
+    parameters_splits_ascending.put("lastBurstIndex", str(last_burst_index))
+    parameters_splits_ascending.put("selectedPolarisations", "VV")
+    parameters_splits_ascending.put("subswath", "IW"+str(swath1))
+    split_s_ascending_iw1 = GPF.createProduct("TOPSAR-Split", parameters_splits_ascending, slave_ascending)
+   
+    if split_s_ascending_iw1:
+        print(".\n.\nTOPSAR-Split slave ascending (1) performed correctly!\n.\n.") 
+    else:
+        print(".\n.\nERROR: TOPSAR-Split slave ascending (1) performance failed.\n.\n.")
+
+    #TOPSAR_Split master ascending (2)
+    parameters_splitm_ascending = HashMap()
+    parameters_splitm_ascending.put("firstBurstIndex", str(first_burst_index))
+    parameters_splitm_ascending.put("lastBurstIndex", str(last_burst_index))
+    parameters_splitm_ascending.put("selectedPolarisations", "VV")
+    parameters_splitm_ascending.put("subswath", "IW"+str(swath2))
+    split_m_ascending_iw2 = GPF.createProduct("TOPSAR-Split", parameters_splitm_ascending, master_ascending)
+    
+    if split_m_ascending_iw2:
+        print(".\n.\nTOPSAR-Split master ascending (2) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: TOPSAR-Split performance master ascending (2) failed.\n.\n.")
+	
+
+
+    #TOPSAR-Split slave ascending (2)
+    parameters_splits_ascending = HashMap()
+    parameters_splits_ascending.put("firstBurstIndex",  str(first_burst_index))
+    parameters_splits_ascending.put("lastBurstIndex", str(last_burst_index))
+    parameters_splits_ascending.put("selectedPolarisations", "VV")
+    parameters_splits_ascending.put("subswath", "IW"+str(swath2))
+    split_s_ascending_iw2 = GPF.createProduct("TOPSAR-Split", parameters_splits_ascending, slave_ascending)
+   
+    if split_s_ascending_iw2:
+        print(".\n.\nTOPSAR-Split slave ascending (2) performed correctly!\n.\n.") 
+    else:
+        print(".\n.\nERROR: TOPSAR-Split slave ascending (2) performance failed.\n.\n.")
+	
+
+# Apply-Orbit-File  -- application of the orbit file on the product
+# Apply-Orbit-File master ascending
+if swath1 == swath2:
+    parameters_orbitm_ascending = HashMap()
+    parameters_orbitm_ascending.put("continueOnFail", 'false')
+    parameters_orbitm_ascending.put('orbitType', 'Sentinel Precise (Auto Download)')
+    parameters_orbitm_ascending.put('polyDegree','3')
+    apply_orbitm_ascending = GPF.createProduct("Apply-Orbit-File", parameters_orbitm_ascending, split_m_ascending)
+
+
+    if apply_orbitm_ascending:
+        print(".\n.\nApply-Orbit-File master ascending performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: Apply-Orbit-File master ascending performance failed.\n.\n.")
+
+
+    #Apply-Orbit-File slave ascending
+    parameters_orbits_ascending = HashMap()
+    parameters_orbits_ascending.put("continueOnFail", 'false')
+    parameters_orbits_ascending.put('orbitType', 'Sentinel Precise (Auto Download)')
+    parameters_orbits_ascending.put('polyDegree','3')
+    apply_orbits_ascending = GPF.createProduct("Apply-Orbit-File", parameters_orbits_ascending, split_s_ascending)
+
+    if apply_orbits_ascending:
+        print(".\n.\nApply-Orbit-File slave ascending performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: Apply-Orbit-File slave ascending performance failed.\n.\n.")
+
+else:
+    #REPETITION FOR BOTH SUBSWATHS
+    #Apply-Orbit-File master ascending (1)
+    parameters_orbitm_ascending = HashMap()
+    parameters_orbitm_ascending.put("continueOnFail", 'false')
+    parameters_orbitm_ascending.put('orbitType', 'Sentinel Precise (Auto Download)')
+    parameters_orbitm_ascending.put('polyDegree','3')
+    apply_orbitm_ascending_iw1 = GPF.createProduct("Apply-Orbit-File", parameters_orbitm_ascending, split_m_ascending_iw1)
+
+
+    if apply_orbitm_ascending_iw1:
+        print(".\n.\nApply-Orbit-File master ascending (1) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: Apply-Orbit-File master ascending (1) performance failed.\n.\n.")
+
+
+    #Apply-Orbit-File slave ascending (1)
+    parameters_orbits_ascending = HashMap()
+    parameters_orbits_ascending.put("continueOnFail", 'false')
+    parameters_orbits_ascending.put('orbitType', 'Sentinel Precise (Auto Download)')
+    parameters_orbits_ascending.put('polyDegree','3')
+    apply_orbits_ascending_iw1 = GPF.createProduct("Apply-Orbit-File", parameters_orbits_ascending, split_s_ascending_iw1)
+
+    if apply_orbits_ascending_iw1:
+        print(".\n.\nApply-Orbit-File slave ascending performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: Apply-Orbit-File slave ascending performance failed.\n.\n.")
+	
+
+    #Apply-Orbit-File master ascending (2)
+    parameters_orbitm_ascending = HashMap()
+    parameters_orbitm_ascending.put("continueOnFail", 'false')
+    parameters_orbitm_ascending.put('orbitType', 'Sentinel Precise (Auto Download)')
+    parameters_orbitm_ascending.put('polyDegree','3')
+    apply_orbitm_ascending_iw2 = GPF.createProduct("Apply-Orbit-File", parameters_orbitm_ascending, split_m_ascending_iw2)
+
+
+    if apply_orbitm_ascending_iw2:
+        print(".\n.\nApply-Orbit-File master ascending (2) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: Apply-Orbit-File master ascending (2) performance failed.\n.\n.")
+
+
+    #Apply-Orbit-File slave ascending (2)
+    parameters_orbits_ascending = HashMap()
+    parameters_orbits_ascending.put("continueOnFail", 'false')
+    parameters_orbits_ascending.put('orbitType', 'Sentinel Precise (Auto Download)')
+    parameters_orbits_ascending.put('polyDegree','3')
+    apply_orbits_ascending_iw2 = GPF.createProduct("Apply-Orbit-File", parameters_orbits_ascending, split_s_ascending_iw2)
+
+    if apply_orbits_ascending_iw2:
+        print(".\n.\nApply-Orbit-File slave ascending (2) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: Apply-Orbit-File slave ascending (2) performance failed.\n.\n.")
+	
+
+# Back-Geocoding -- Geocoding of the two input products. NOTE: for default, SNAP insert the data in the order SLAVE-MASTER
+# Back-Geocoding ascending
+if swath1 == swath2:  
+    parameters_backgeocoding_ascending = HashMap()
+    parameters_backgeocoding_ascending.put("demName", "SRTM 3Sec")
+    parameters_backgeocoding_ascending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
+    parameters_backgeocoding_ascending.put("disableReramp", "false")
+    parameters_backgeocoding_ascending.put("externalDEMNoDataValue", "0")
+    parameters_backgeocoding_ascending.put("maskOutAreaWithoutElevation", "true")
+    parameters_backgeocoding_ascending.put("outputDerampDemodPhase", "false")
+    parameters_backgeocoding_ascending.put("outputRangeAzimuthOffset", "false")
+    parameters_backgeocoding_ascending.put("resamplingType", "BILINEAR_INTERPOLATION")
+    merge = [apply_orbitm_ascending, apply_orbits_ascending]
+    backgeocoding_ascending = GPF.createProduct("Back-Geocoding", parameters_backgeocoding_ascending, merge)
+    output = Path.joinpath(path_products_ascending, "back_geocoding_ascending")
+    ProductIO.writeProduct(backgeocoding_ascending, str(output), "BEAM-DIMAP")
+    path = Path.joinpath(path_products_ascending, "back_geocoding_ascending.dim")
+    back_geocoding_ascending = ProductIO.readProduct(str(path))
+
+
+    if backgeocoding_ascending:
+        print(".\n.\nBack-Geocoding ascending performed correctly!\n.\n.")
+    else:
+        print(".\n.\nBack-Geocoding ascending performance failed.\n.\n.")
+
+else:
+    #REPETITION FOR BOTH SUBSWATHS
+    #Back-Geocoding ascending (1)
+    parameters_backgeocoding_ascending = HashMap()
+    parameters_backgeocoding_ascending.put("demName", "SRTM 3Sec")
+    parameters_backgeocoding_ascending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
+    parameters_backgeocoding_ascending.put("disableReramp", "false")
+    parameters_backgeocoding_ascending.put("externalDEMNoDataValue", "0")
+    parameters_backgeocoding_ascending.put("maskOutAreaWithoutElevation", "true")
+    parameters_backgeocoding_ascending.put("outputDerampDemodPhase", "false")
+    parameters_backgeocoding_ascending.put("outputRangeAzimuthOffset", "false")
+    parameters_backgeocoding_ascending.put("resamplingType", "BILINEAR_INTERPOLATION")
+    merge = [apply_orbitm_ascending_iw1, apply_orbits_ascending_iw1]
+    backgeocoding_ascending_iw1 = GPF.createProduct("Back-Geocoding", parameters_backgeocoding_ascending, merge)
+    output = Path.joinpath(path_products_ascending, "back_geocoding_ascending_iw1")
+    ProductIO.writeProduct(backgeocoding_ascending_iw1, str(output), "BEAM-DIMAP") 
+    path1 = Path.joinpath(path_products_ascending, "back_geocoding_ascending_iw1.dim")
+    back_geocoding_ascending_iw1 = ProductIO.readProduct(str(path1))
+
+    if backgeocoding_ascending_iw1:
+        print(".\n.\nBack-Geocoding ascending (1) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nBack-Geocoding ascending (1) performance failed.\n.\n.")
+
+	#Back-Geocoding ascending (2)
+    parameters_backgeocoding_ascending = HashMap()
+    parameters_backgeocoding_ascending.put("demName", "SRTM 3Sec")
+    parameters_backgeocoding_ascending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
+    parameters_backgeocoding_ascending.put("disableReramp", "false")
+    parameters_backgeocoding_ascending.put("externalDEMNoDataValue", "0")
+    parameters_backgeocoding_ascending.put("maskOutAreaWithoutElevation", "true")
+    parameters_backgeocoding_ascending.put("outputDerampDemodPhase", "false")
+    parameters_backgeocoding_ascending.put("outputRangeAzimuthOffset", "false")
+    parameters_backgeocoding_ascending.put("resamplingType", "BILINEAR_INTERPOLATION")
+    merge = [apply_orbitm_ascending_iw2, apply_orbits_ascending_iw2]
+    backgeocoding_ascending_iw2 = GPF.createProduct("Back-Geocoding", parameters_backgeocoding_ascending, merge)
+    output = Path.joinpath(path_products_ascending, "back_geocoding_ascending_iw2")
+    ProductIO.writeProduct(backgeocoding_ascending_iw2, str(output), "BEAM-DIMAP")
+    path2 = Path.joinpath(path_products_ascending, "back_geocoding_ascending_iw2.dim")
+    back_geocoding_ascending_iw2 = ProductIO.readProduct(str(path2))
+
+    if backgeocoding_ascending_iw2:
+        print(".\n.\nBack-Geocoding ascending (2) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nBack-Geocoding ascending (2) performance failed.\n.\n.")
+
+
+
+# Enhanced-Spectral-Diversity -- Estimate constant range and azimuth offsets for a stack of images
+# Enhanced-Spectral-Diversity ascending
+if swath1 == swath2:
+    with open(graph_enhanced_spectral_diversity, "r") as xml_esd:
+        tree = et.parse(xml_esd)
+
+    output = Path.joinpath(path_products_ascending, "esd_ascending.dim")
+    root = tree.getroot()
+    file_input = root.xpath("//node/parameters/file")
+    file_input[0].text = str(path)
+    file_input[1].text = str(output)
+    et.ElementTree(root).write(str(graph_enhanced_spectral_diversity))
+
+    subprocess.run(["gpt", str(path_graph_enhanced_spectral_diversity)])
+
+    path_esd_ascending = Path.joinpath(path_products_ascending, "esd_ascending.dim")
+    esd_ascending = ProductIO.readProduct(str(path_esd_ascending))
+
+else:
+    # REPETITION FOR BOTH SUBSWATHS 
+    # Enhanced-Spectral-Diversity (1)
+    with open(graph_enhanced_spectral_diversity_iw1, "r") as xml_esd_iw1:
+        tree = et.parse(xml_esd_iw1)
+
+    output = Path.joinpath(path_products_ascending, "esd_ascending_iw1.dim")
+    root = tree.getroot()
+    file_input = root.xpath("//node/parameters/file")
+    file_input[0].text = str(path1)
+    file_input[1].text = str(output)
+    et.ElementTree(root).write(str(graph_enhanced_spectral_diversity_iw1))
+
+    subprocess.run(["gpt", str(path_graph_enhanced_spectral_diversity_iw1)])
+
+    path_esd_ascending_iw1 = Path.joinpath(path_products_ascending, "esd_ascending_iw1.dim")
+    esd_ascending_iw1 = ProductIO.readProduct(str(path_esd_ascending_iw1))
+
+    # Enhanced-Spectral-Diversity ascending (2)
+    with open(graph_enhanced_spectral_diversity_iw2, "r") as xml_esd_iw2:
+        tree = et.parse(xml_esd_iw2)
+
+    output = Path.joinpath(path_products_ascending, "esd_ascending_iw2.dim")
+    root = tree.getroot()
+    file_input = root.xpath("//node/parameters/file")
+    file_input[0].text = str(path2)
+    file_input[1].text = str(output)
+    et.ElementTree(root).write(str(graph_enhanced_spectral_diversity_iw2))
+
+    subprocess.run(["gpt", str(path_graph_enhanced_spectral_diversity_iw2)])
+
+    path_esd_ascending_iw2 = Path.joinpath(path_products_ascending, "esd_ascending_iw2.dim")
+    esd_ascending_iw2 = ProductIO.readProduct(str(path_esd_ascending_iw2))
+
+
+#Interferogram formation ascending
+if swath1 == swath2:
+    parameters_ifg_ascending = HashMap()
+    parameters_ifg_ascending.put("cohWinAz", str(cohwiaz))
+    parameters_ifg_ascending.put("cohWinRg", str(cohwirg))
+    parameters_ifg_ascending.put("demName", "SRTM 3Sec")
+    parameters_ifg_ascending.put("externalDEMApplyEGM", "true")
+    parameters_ifg_ascending.put("externalDEMNoDataValue", "0")
+    parameters_ifg_ascending.put("includeCoherence", "true")
+    parameters_ifg_ascending.put("orbitDegree", "3")
+    parameters_ifg_ascending.put("outputElevation", "false")
+    parameters_ifg_ascending.put("outputLatLon", "false")
+    parameters_ifg_ascending.put("squarePixel", "true")
+    parameters_ifg_ascending.put("srpNumberPoints", "501")
+    parameters_ifg_ascending.put("srpPolynomialDegree", "5")
+    parameters_ifg_ascending.put("subtractFlatEarthPhase", "true")
+    parameters_ifg_ascending.put("subtractTopographicPhase", "true")
+    parameters_ifg_ascending.put("tileExtensionPercent", "100")
+    interferogram_ascending = GPF.createProduct("Interferogram", parameters_ifg_ascending, esd_ascending)
+   
+
+    if interferogram_ascending:
+        print(".\n.\nInterferogram ascending performed correctly!\n.\n.")
+    else:
+        print(".\n.\nInterferogram ascending performance failed.\n.\n.")
+
+else:
+    #REPETITION FOR BOTH SUBSWATHS
+    #Interferogram formation ascending (1)
+    parameters_ifg_ascending = HashMap()
+    parameters_ifg_ascending.put("cohWinAz", str(cohwiaz)) 
+    parameters_ifg_ascending.put("cohWinRg", str(cohwirg))
+    parameters_ifg_ascending.put("demName", "SRTM 3Sec")
+    parameters_ifg_ascending.put("externalDEMApplyEGM", "true")
+    parameters_ifg_ascending.put("externalDEMNoDataValue", "0")
+    parameters_ifg_ascending.put("includeCoherence", "true")
+    parameters_ifg_ascending.put("orbitDegree", "3")
+    parameters_ifg_ascending.put("outputElevation", "false")
+    parameters_ifg_ascending.put("outputLatLon", "false")
+    parameters_ifg_ascending.put("squarePixel", "true")
+    parameters_ifg_ascending.put("srpNumberPoints", "501")
+    parameters_ifg_ascending.put("srpPolynomialDegree", "5")
+    parameters_ifg_ascending.put("subtractFlatEarthPhase", "true")
+    parameters_ifg_ascending.put("subtractTopographicPhase", "true")
+    parameters_ifg_ascending.put("tileExtensionPercent", "100")
+    interferogram_ascending_iw1 = GPF.createProduct("Interferogram", parameters_ifg_ascending, esd_ascending_iw1)
+   
+
+    if interferogram_ascending_iw1:
+        print(".\n.\nInterferogram ascending (1) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nInterferogram ascending (1) performance failed.\n.\n.")
+
+    # Interferogram formation ascending (2)
+    parameters_ifg_ascending = HashMap()
+    parameters_ifg_ascending.put("cohWinAz", str(cohwiaz))
+    parameters_ifg_ascending.put("cohWinRg", str(cohwirg))
+    parameters_ifg_ascending.put("demName", "SRTM 3Sec")
+    parameters_ifg_ascending.put("externalDEMApplyEGM", "true")
+    parameters_ifg_ascending.put("externalDEMNoDataValue", "0")
+    parameters_ifg_ascending.put("includeCoherence", "true")
+    parameters_ifg_ascending.put("orbitDegree", "3")
+    parameters_ifg_ascending.put("outputElevation", "false")
+    parameters_ifg_ascending.put("outputLatLon", "false")
+    parameters_ifg_ascending.put("squarePixel", "true")
+    parameters_ifg_ascending.put("srpNumberPoints", "501")
+    parameters_ifg_ascending.put("srpPolynomialDegree", "5")
+    parameters_ifg_ascending.put("subtractFlatEarthPhase", "true")
+    parameters_ifg_ascending.put("subtractTopographicPhase", "true")
+    parameters_ifg_ascending.put("tileExtensionPercent", "100")
+    interferogram_ascending_iw2 = GPF.createProduct("Interferogram", parameters_ifg_ascending, esd_ascending_iw2)
+   
+
+    if interferogram_ascending_iw2:
+        print(".\n.\nInterferogram ascending (2) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nInterferogram ascending (2) performance failed.\n.\n.")
+
+
+
+#TOPSAR-Deburst ascending
+if swath1 == swath2:
+    parameters_deb_ascending = HashMap()
+    parameters_deb_ascending.put("selectedPolarisations", "VV")
+    deburst_ascending = GPF.createProduct("TOPSAR-Deburst", parameters_deb_ascending, interferogram_ascending)
+    
+    if deburst_ascending:
+        print("\n.\nTOPSAR-Deburst ascending performed correctly!\n.\n.")
+    else:
+        print("\n.\nTOPSAR-Deburst ascending performance failed.\n.\n.")
+
+else:
+    #REPETITION FOR BOTH SUBSWATHS
+    #TOPSAR-Deburst ascending (1)
+    parameters_deb_ascending = HashMap()
+    parameters_deb_ascending.put("selectedPolarisations", "VV")
+    topsar_deb_ascending_iw1 = GPF.createProduct("TOPSAR-Deburst", parameters_deb_ascending, interferogram_ascending_iw1)
+
+
+
+    if topsar_deb_ascending_iw1:
+        print("\n.\nTOPSAR-Deburst ascending (1) performed correctly!\n.\n.")
+    else:
+        print("\n.\nTOPSAR-Deburst ascending (1) performance failed.\n.\n.")
+
+    #TOPSAR-Deburst ascending (2)
+    parameters_deb_ascending = HashMap()
+    parameters_deb_ascending.put("selectedPolarisations", "VV")
+    topsar_deb_ascending_iw2 = GPF.createProduct("TOPSAR-Deburst", parameters_deb_ascending, interferogram_ascending_iw2)
+
+    if topsar_deb_ascending_iw2:
+        print("\n.\nTOPSAR-Deburst ascending (2) performed correctly!\n.\n.")
+    else:
+        print("\n.\nTOPSAR-Deburst ascending (2) performance failed.\n.\n.")
+
+
+    #TOPSAR-Merge ascending
+    parameters_merge_ascending = HashMap()
+    parameters_merge_ascending.put("selectedPolarisations", "VV")
+    merge = [topsar_deb_ascending_iw1, topsar_deb_ascending_iw2]
+    deburst_ascending = GPF.createProduct("TOPSAR-Merge", parameters_merge_ascending, merge)
+
+
+    if deburst_ascending:
+        print("\n.\nTOPSAR-Merge ascending performed correctly!\n.\n.")
+    else:
+        print("\n.\nTOPSAR-Merge ascending performance failed.\n.\n.")
+
+
+
+#GoldsteinPhaseFiltering ascending
+parameters_filtering_ascending = HashMap()
+parameters_filtering_ascending.put("alpha", "1.0")
+parameters_filtering_ascending.put("coherenceThreshold", str(coherencethreshold))
+parameters_filtering_ascending.put("FFTSizeString", str(fftsizestring)) 
+parameters_filtering_ascending.put("useCoherenceMask", str(usecoherencemask))
+parameters_filtering_ascending.put("windowSizeString", str(windowsizestring))
+filter_asc = GPF.createProduct("GoldsteinPhaseFiltering", parameters_filtering_ascending, deburst_ascending) 
+output = Path.joinpath(path_products_ascending, "filter_ascending")  
+ProductIO.writeProduct(filter_asc, str(output), "BEAM-DIMAP")
+path_filter_ascending = Path.joinpath(path_products_ascending, "filter_ascending.dim")
+filter_ascending = ProductIO.readProduct(str(path_filter_ascending))
+
+if filter_asc:
+    print("\n.\nGoldsteinPhaseFiltering ascending performed correctly!\n.\n.")
+else:
+    print("\n.\nGoldsteinPhaseFiltering ascending performance failed.\n.\n.")
+
+
+
+#Subset
+vertex1_list = [min_lon_aoi, max_lat_aoi]
+vertex1 = " ".join(str(x) for x in vertex1_list)
+
+vertex2_list = [max_lon_aoi, max_lat_aoi]
+vertex2 = " ".join(str(y) for y in vertex2_list)
+
+vertex3_list = [max_lon_aoi, min_lat_aoi]
+vertex3 = " ".join(str(z) for z in vertex3_list)
+
+vertex4_list = [min_lon_aoi, min_lat_aoi]
+vertex4 = " ".join(str(w) for w in vertex4_list)
+
+bands = ""
+for i in list(filter_asc.getBandNames()):
+    bands = bands + i + ","
+
+
+wkt = "POLYGON((%s, %s, %s, %s, %s))" % (vertex1, vertex2, vertex3, vertex4, vertex1)
+
+
+with open(graph_subset, "r") as xml_subset:
+    tree = et.parse(xml_subset)
+
+output = Path.joinpath(path_products_ascending, "Subset_filter_ascending.dim")
+root = tree.getroot()
+file_input = root.xpath("//node/parameters/file")
+file_input[0].text = str(path_filter_ascending)
+file_input[1].text = str(output)
+georegion = root.xpath("//node/parameters/geoRegion")
+georegion[0].text = str(wkt)
+et.ElementTree(root).write(str(graph_subset))
+
+subprocess.run(["gpt", str(path_graph_subset)])
+
+
+
+# Snaphu Export
+subset = Path.joinpath(path_products_ascending, "Subset_filter_ascending.dim")
+subset_read_ascending = ProductIO.readProduct(str(subset))
+snaphuexport_folder = Path.joinpath(path_products_ascending, "export")
+os.system("gpt SnaphuExport -Ssource=" + str(subset) + " -PtargetFolder=" + str(snaphuexport_folder))
+
+# Snaphu Unwrapping ascending
+path_conf = Path.joinpath(snaphuexport_folder, "Subset_filter_ascending\\snaphu.conf")
+file = open(str(path_conf))
+lines = file.readlines()
+code = lines[6]
+code = code[14:]
+
+path_unwrap = path_snaphu + code
+path_dir = Path.joinpath(snaphuexport_folder, "Subset_filter_ascending")
+subprocess.run(path_unwrap, cwd = path_dir)
+
+
+
+# Snaphu Import ascending
+filtered_prod = subset_read_ascending
+unwrapping_folder = Path.joinpath(snaphuexport_folder, "Subset_filter_ascending\\Unw*.snaphu.hdr")
+for unwrapped_phase in glob.glob(str(unwrapping_folder)):
+    unwrapped_phase_ascending = ProductIO.readProduct(unwrapped_phase)
+products = [filtered_prod, unwrapped_phase_ascending]
+parameters_import = HashMap()
+parameters_import.put("doNotKeepWeapped", "false")
+snaphu_import = GPF.createProduct("SnaphuImport", parameters_import, products)
+output = Path.joinpath(path_products_ascending, "unwrapped_phase_ascending")
+ProductIO.writeProduct(snaphu_import, str(output), "BEAM-DIMAP")
+path = Path.joinpath(path_products_ascending, "unwrapped_phase_ascending.dim")
+unwrapped_phase_ascending = ProductIO.readProduct(str(path))
+
+if snaphu_import:
+    print("\n.\nAscending product from Snaphu imported correctly!\n.\n.")
+else:
+    print("\n.\nSnaphu import ascending failed.\n.\n.")
+
+if unwrapped_phase:
+    print("\n.\nImported ascending product written correctly!\n.\n.")
+else:
+    print("\n.\nImported ascending product writing failed.\n.\n.")
+
+
+
+
+#Save a GeoTIFF-BigTIFF file from the unwrapped phase
+bands = ""
+for i in list(unwrapped_phase_ascending.getBandNames()):
+    bands = bands + i + ","
+
+if swath1 == swath2:
+
+    phase_product = bands [110:146]
+
+    parameters_multilook = HashMap()
+    parameters_multilook.put("grSquarePixel", "true")
+    parameters_multilook.put("nAzLooks", 1)
+    parameters_multilook.put("nRgLooks", 1)
+    parameters_multilook.put("outputIntensity", "false")
+    parameters_multilook.put("sourceBands", str(phase_product))
+    multilook = GPF.createProduct("Multilook", parameters_multilook, unwrapped_phase_ascending)
+
+    parameters_tc_ascending = HashMap()
+    parameters_tc_ascending.put("alignToStandardGrid", "false")
+    parameters_tc_ascending.put("applyRadiometricNormalization", "false")
+    parameters_tc_ascending.put("auxFile", "Latest Auxiliary File")
+    parameters_tc_ascending.put("demName", "SRTM 3Sec")
+    parameters_tc_ascending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
+    parameters_tc_ascending.put("externalDEMNoDataValue", "0")
+    parameters_tc_ascending.put("imgResamplingMethod", "BILINEAR_INTERPOLATION")
+    parameters_tc_ascending.put("incidenceAngleForGamma0", "Use projected local incidence angle from DEM")
+    parameters_tc_ascending.put("incidenceAngleForSigma0", "Use projected local incidence angle from DEM")
+    parameters_tc_ascending.put("mapProjection", "WGS84(DD)")
+    parameters_tc_ascending.put("nodataValueAtSea", "true")
+    parameters_tc_ascending.put("outputComplex", "false")
+    parameters_tc_ascending.put("pixelSpacingInDegree", "0")
+    parameters_tc_ascending.put("pixelSpacingInMeter", "0")
+    parameters_tc_ascending.put("saveBetaNought", "false")
+    parameters_tc_ascending.put("saveDEM", "false")
+    parameters_tc_ascending.put("saveGammaNought", "false")
+    parameters_tc_ascending.put("saveIncidenceAngleFromEllipsoid", "true")
+    parameters_tc_ascending.put("saveLatLon", "false")
+    parameters_tc_ascending.put("saveLayoverShadowMask", "false")
+    parameters_tc_ascending.put("saveLocalIncidenceAngle", "false")
+    parameters_tc_ascending.put("saveProjectedLocalIncidenceAngle", "false")
+    parameters_tc_ascending.put("saveSelectedSourceBand", "true")
+    parameters_tc_ascending.put("saveSigmaNought", "false")
+    parameters_tc_ascending.put("sourceBands", str(phase_product))
+    parameters_tc_ascending.put("standardGridOriginX", "0")
+    parameters_tc_ascending.put("standardGridOriginY", "0")
+    tc_ascending = GPF.createProduct("Terrain-Correction", parameters_tc_ascending, multilook)
+    output = Path.joinpath(path_products_ascending, "interferogram_ascending") 
+    ProductIO.writeProduct(tc_ascending, str(output), "GeoTIFF-BigTIFF") 
+    path_ascending = Path.joinpath(path_products_ascending, "interferogram_ascending.tif") 
+    ifg_tif_ascending = ProductIO.readProduct(str(path_ascending)) 
+
+    if ifg_tif_ascending: 
+        print("\n.\nInterferogram tif ascending product written correctly!\n.\n.") 
+    else: 
+        print("\n.\nInterferogram tif ascending product writing failed.\n.\n.") 
+
+else:
+    phase_product = bands[98:130]
+
+    parameters_multilook = HashMap()
+    parameters_multilook.put("grSquarePixel", "true")
+    parameters_multilook.put("nAzLooks", 1)
+    parameters_multilook.put("nRgLooks", 1)
+    parameters_multilook.put("outputIntensity", "false")
+    parameters_multilook.put("sourceBands", str(phase_product))
+    multilook = GPF.createProduct("Multilook", parameters_multilook, unwrapped_phase_ascending)
+
+    parameters_tc_ascending = HashMap()
+    parameters_tc_ascending.put("alignToStandardGrid", "false")
+    parameters_tc_ascending.put("applyRadiometricNormalization", "false")
+    parameters_tc_ascending.put("auxFile", "Latest Auxiliary File")
+    parameters_tc_ascending.put("demName", "SRTM 3Sec")
+    parameters_tc_ascending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
+    parameters_tc_ascending.put("externalDEMNoDataValue", "0")
+    parameters_tc_ascending.put("imgResamplingMethod", "BILINEAR_INTERPOLATION")
+    parameters_tc_ascending.put("incidenceAngleForGamma0", "Use projected local incidence angle from DEM")
+    parameters_tc_ascending.put("incidenceAngleForSigma0", "Use projected local incidence angle from DEM")
+    parameters_tc_ascending.put("mapProjection", "WGS84(DD)")
+    parameters_tc_ascending.put("nodataValueAtSea", "true")
+    parameters_tc_ascending.put("outputComplex", "false")
+    parameters_tc_ascending.put("pixelSpacingInDegree", "0")
+    parameters_tc_ascending.put("pixelSpacingInMeter", "0")
+    parameters_tc_ascending.put("saveBetaNought", "false")
+    parameters_tc_ascending.put("saveDEM", "false")
+    parameters_tc_ascending.put("saveGammaNought", "false")
+    parameters_tc_ascending.put("saveIncidenceAngleFromEllipsoid", "true")
+    parameters_tc_ascending.put("saveLatLon", "false")
+    parameters_tc_ascending.put("saveLayoverShadowMask", "false")
+    parameters_tc_ascending.put("saveLocalIncidenceAngle", "false")
+    parameters_tc_ascending.put("saveProjectedLocalIncidenceAngle", "false")
+    parameters_tc_ascending.put("saveSelectedSourceBand", "true")
+    parameters_tc_ascending.put("saveSigmaNought", "false")
+    parameters_tc_ascending.put("sourceBands", str(phase_product))
+    parameters_tc_ascending.put("standardGridOriginX", "0")
+    parameters_tc_ascending.put("standardGridOriginY", "0")
+    tc_ascending = GPF.createProduct("Terrain-Correction", parameters_tc_ascending, multilook)
+    output = Path.joinpath(path_products_ascending, "interferogram_ascending") 
+    ProductIO.writeProduct(tc_ascending, str(output), "GeoTIFF-BigTIFF") 
+    path_ascending = Path.joinpath(path_products_ascending, "interferogram_ascending.tif") 
+    ifg_tif_ascending = ProductIO.readProduct(str(path_ascending)) 
+
+    if ifg_tif_ascending: 
+        print("\n.\nInterferogram tif ascending product written correctly!\n.\n.") 
+    else: 
+        print("\n.\nInterferogram tif ascending product writing failed.\n.\n.") 
+
+#PhaseToDisplacement ascending
+parameters_ptd = HashMap()
+ptd_ascending = GPF.createProduct("PhaseToDisplacement", parameters_ptd, unwrapped_phase_ascending)
+
+if ptd_ascending:
+    print("\n.\nPhaseToDisplacement ascending performed correctly!\n.\n.")
+else:
+    print("\n.\nPhaseToDisplacement ascending performance failed.\n.\n.")
+
+
+#Terrain-Correction ascending
+parameters_tc_ascending = HashMap()
+parameters_tc_ascending.put("alignToStandardGrid", "false")
+parameters_tc_ascending.put("applyRadiometricNormalization", "false")
+parameters_tc_ascending.put("auxFile", "Latest Auxiliary File")
+parameters_tc_ascending.put("demName", "SRTM 3Sec")
+parameters_tc_ascending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
+parameters_tc_ascending.put("externalDEMNoDataValue", "0")
+parameters_tc_ascending.put("imgResamplingMethod", "BILINEAR_INTERPOLATION")
+parameters_tc_ascending.put("incidenceAngleForGamma0", "Use projected local incidence angle from DEM")
+parameters_tc_ascending.put("incidenceAngleForSigma0", "Use projected local incidence angle from DEM")
+parameters_tc_ascending.put("mapProjection", "WGS84(DD)")
+parameters_tc_ascending.put("nodataValueAtSea", "true")
+parameters_tc_ascending.put("outputComplex", "false")
+parameters_tc_ascending.put("pixelSpacingInDegree", "0")
+parameters_tc_ascending.put("pixelSpacingInMeter", "0")
+parameters_tc_ascending.put("saveBetaNought", "false")
+parameters_tc_ascending.put("saveDEM", "false")
+parameters_tc_ascending.put("saveGammaNought", "false")
+parameters_tc_ascending.put("saveIncidenceAngleFromEllipsoid", "true")
+parameters_tc_ascending.put("saveLatLon", "false")
+parameters_tc_ascending.put("saveLayoverShadowMask", "false")
+parameters_tc_ascending.put("saveLocalIncidenceAngle", "false")
+parameters_tc_ascending.put("saveProjectedLocalIncidenceAngle", "false")
+parameters_tc_ascending.put("saveSelectedSourceBand", "true")
+parameters_tc_ascending.put("saveSigmaNought", "false")
+parameters_tc_ascending.put("standardGridOriginX", "0")
+parameters_tc_ascending.put("standardGridOriginY", "0")
+tc_ascending = GPF.createProduct("Terrain-Correction", parameters_tc_ascending, ptd_ascending)
+output = Path.joinpath(path_products_ascending, "terraincorrection_ascending") 
+ProductIO.writeProduct(tc_ascending, str(output), "BEAM-DIMAP") 
+path_ascending = Path.joinpath(path_products_ascending, "terraincorrection_ascending.dim")
+terrain_correction_ascending = ProductIO.readProduct(str(path_ascending))
+
+if tc_ascending:
+    print("\n.\nTerrain-Correction ascending performed correctly!\n.\n.")
+else:
+    print("\n.\nTerrain-Correction ascending performance failed.\n.\n.")
+
+if terrain_correction_ascending: 
+    print("\n.\nTerrain-Correction ascending product written correctly!\n.\n.") 
+else: 
+    print("\n.\nTerrain-Correction ascending product writing failed.\n.\n.") 
+
+
+
+#Save a GeoTIFF-BigTIFF product from Terrain Correction
+tc_ascending.getBand("displacement_VV")
+BandDescriptor = jpy.get_type("org.esa.snap.core.gpf.common.BandMathsOp$BandDescriptor")
+input_band_tc = BandDescriptor()
+input_band_tc.name = "displacement_VV"
+input_band_tc.type = "float32"
+input_band_tc.expression = "((displacement_VV) * (-1))"
+input_bands = jpy.array("org.esa.snap.core.gpf.common.BandMathsOp$BandDescriptor", 1)
+input_bands[0] = input_band_tc
+parameters_bm = HashMap()
+parameters_bm.put("targetBands", input_bands)
+los_tif = GPF.createProduct("BandMaths", parameters_bm, tc_ascending)
+output = Path.joinpath(path_products_ascending, "LOS_ascending")
+ProductIO.writeProduct(los_tif, str(output), "GeoTIFF-BigTIFF")
+
+
+# --------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+#Define minimum dimension of the data -- DESCENDING ORBIT
+def get_min_max(current, min_value, max_value):
+	if current < min_value:
+		min_value = current
+	if current > max_value:
+		max_value = current
+	return [min_value, max_value]
+
+def get_extent(product):
+	# Get corner coordinates of the ESA SNAP product (get extent)
+	# int step - the step given in pixels
+	step = 1
+	min_longitude = 999.99
+
+	position = ProductUtils.createGeoBoundary(master_descending, step)
+
+	max_longitude = -min_longitude
+	min_latitude = min_longitude
+	max_latitude = max_longitude
+	for element in position:
+		try:
+			longitude = element.getLon()
+			[min_longitude, max_longitude] = get_min_max(longitude, min_longitude, max_longitude)
+		except(NameError):
+			print(NameError)
+			pass
+		try:
+			latitude = element.getLat()
+			[min_latitude, max_latitude] = get_min_max(latitude, min_latitude, max_latitude)
+		except(NameError):
+			print(NameError)
+			pass
+	return [min_longitude, max_longitude, min_latitude, max_latitude]
+
+def find_nearest(array, value):
+	distance_lat = []
+	for x in array:
+		distance = abs(x - value)
+		distance_lat.append(distance)
+	return distance_lat.index(min(distance_lat))
+
+def find_nearest_value(array, value):
+	distances = []
+	for y in array:
+		distance = abs(y - value)
+		distances.append(distance)
+		min_dist = min(distances)
+		answ = abs(value-min_dist)
+	return answ
+
+
+#Repeat for slave
+def get_min_max(current, min_value, max_value):
+	if current < min_value:
+		min_value = current
+	if current > max_value:
+		max_value = current
+	return [min_value, max_value]
+
+def get_extent(product):
+	# Get corner coordinates of the ESA SNAP product (get extent)
+	# int step - the step given in pixels
+	step = 1
+	min_longitude = 999.99
+
+	position = ProductUtils.createGeoBoundary(slave_descending, step)
+
+	max_longitude = -min_longitude
+	min_latitude = min_longitude
+	max_latitude = max_longitude
+	for element in position:
+		try:
+			longitude = element.getLon()
+			[min_longitude, max_longitude] = get_min_max(longitude, min_longitude, max_longitude)
+		except(NameError):
+			print(NameError)
+			pass
+		try:
+			latitude = element.getLat()
+			[min_latitude, max_latitude] = get_min_max(latitude, min_latitude, max_latitude)
+		except(NameError):
+			print(NameError)
+			pass
+	return [min_longitude, max_longitude, min_latitude, max_latitude]
+
+def find_nearest(array, value):
+	distance_lat = []
+	for x in array:
+		distance = abs(x - value)
+		distance_lat.append(distance)
+	return distance_lat.index(min(distance_lat))
+
+def get_value(array, ind):
+	value = []
+	for x in array:
+		if array.index(x) == ind:
+			value.append(x)
+	return value
+		
+
+
+array_paths_products = [path_master_descending, path_slave_descending] 
+for product in array_paths_products:
+    array_coordinates_product = get_extent(product)
+    
+
+
+#Division of the data in subswaths and bursts
+max_longitude = array_coordinates_product[1]
+min_longitude = array_coordinates_product[0]
+max_latitude = array_coordinates_product[3]
+min_latitude = array_coordinates_product[2]
+
+d_lon = (abs(max_longitude - min_longitude)/3)
+d_lat = (abs(max_latitude - min_latitude)/9)
+
+longitude = [] #swath in longitude
+i = np.arange(0, 4)
+for x in i:
+	point_grid_lon = min_longitude + d_lon * x
+	longitude.append(point_grid_lon)
+
+	
+
+latitude_descending = [] #burst in latitude
+j = np.arange(0, 10)
+for x in j:
+	point_grid_lat = min_latitude + d_lat * x
+	latitude_descending.append(point_grid_lat)
+
+latitude = latitude_descending[::-1]
+
+
+#Test of existence of the AOI in the data
+if max_lon_aoi < max_longitude:
+	True
+else:
+	raise Exception("The AOI is not contained in the product.")
+
+if min_lon_aoi > min_longitude:
+	True
+else:
+	raise Exception("The AOI is not contained in the product.")
+
+if max_lat_aoi < max_latitude:
+	True
+else:
+	raise Exception("The AOI is not contained in the product.")
+if min_lat_aoi > min_latitude:
+	True
+else:
+	raise Exception("The AOI is not contained in the product.")
+
+
+#Minimum distance in index
+min_distance_latitude_index1 = find_nearest(latitude, min_lat_aoi)
+min_distance_latitude_index2 = find_nearest(latitude, max_lat_aoi)
+min_distance_longitude_index1 = find_nearest(longitude, min_lon_aoi)
+min_distance_longitude_index2 = find_nearest(longitude, max_lon_aoi)
+
+min_distance_longitude1_array = get_value(longitude, min_distance_longitude_index1)
+min_distance_longitude2_array = get_value(longitude, min_distance_longitude_index2)
+min_distance_latitude1_array = get_value(latitude, min_distance_latitude_index1)
+min_distance_latitude2_array = get_value(latitude, min_distance_latitude_index2)
+
+for x in min_distance_longitude1_array:
+	min_distance_longitude1 = x
+	
+for y in min_distance_longitude2_array:
+	min_distance_longitude2 = y
+	
+for z in min_distance_latitude1_array:
+	min_distance_latitude1 = z
+	
+for j in min_distance_latitude2_array:
+	min_distance_latitude2 = j
+
+
+#Burst selection
+if min_distance_latitude1 > min_lat_aoi:
+    if min_distance_latitude_index1 == 0:
+        first_burst_index = 1
+    if min_distance_latitude_index1 == 9:
+          first_burst_index = 9
+    first_burst_index = min_distance_latitude_index1
+
+else:
+	if min_distance_latitude_index1 == 9:
+		first_burst_index = 9
+	first_burst_index = min_distance_latitude_index1 + 1
+
+
+if min_distance_latitude2 < max_lat_aoi:
+    if min_distance_latitude_index2 == 0:
+        last_burst_index = 1
+    if min_distance_latitude_index2 == 9:
+        last_burst_index = 9
+    last_burst_index = min_distance_latitude_index2 + 1
+
+else:
+	if min_distance_latitude_index2 == 0:
+		last_burst_index = 1
+
+	last_burst_index = min_distance_latitude_index2
+
+
+
+swath1 = 999
+swath2 = 999
+
+
+#Swath selection
+if min_distance_longitude1 < min_lon_aoi:
+	if min_distance_longitude_index1 == 1:
+		swath1 = 2
+	if min_distance_longitude_index1 == 0:
+		swath1 = 3
+	if min_distance_longitude_index1 == 3:
+		swath1 = 1
+	if min_distance_longitude_index1 == 2:
+		swath1 = 1
+
+else:
+	if min_distance_longitude_index1 == 1:
+		swath1 = 3
+	if min_distance_longitude_index1 == 2:
+		swath1 = 2
+	swath1 = min_distance_longitude_index1
+	if min_distance_longitude_index1 == 3:
+		swath1 = 1
+
+if min_distance_longitude2 > max_lon_aoi:
+	if min_distance_longitude_index2 == 1:
+		swath2 = 3
+	if min_distance_longitude_index2 == 3:
+		swath2 = 1
+	if min_distance_longitude_index2 == 0:
+		swath2 = 3	
+	if min_distance_longitude_index2 == 2:
+		swath2 = 2
+
+else:
+	if min_distance_longitude_index2 == 0:
+		swath2 = 3
+	if min_distance_longitude_index2 == 2:
+		swath2 = 1
+	if min_distance_longitude_index2 == 3:
+		swath2 = 1
+	if min_distance_longitude_index2 == 1:
+		swath2 = 2
+
+
+
+if swath1 == swath2:
+     print("SAME SUBSWATH")
+else:
+     print("DIFFERENT SUBSWATHS")
+
+       
+
+#TOPSAR Split master descending
+if swath1 == swath2:
+    parameters_splitm_descending = HashMap()
+    parameters_splitm_descending.put("firstBurstIndex", str(last_burst_index))
+    parameters_splitm_descending.put("lastBurstIndex", str(first_burst_index))
+    parameters_splitm_descending.put("selectedPolarisations", "VV")
+    parameters_splitm_descending.put("subswath", "IW"+str(swath1)) 
+    split_m_descending = GPF.createProduct("TOPSAR-Split", parameters_splitm_descending, master_descending)
+
+
+    if split_m_descending:
+        print(".\n.\nTOPSAR-Split master descending performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: TOPSAR-Split performance master descending failed.\n.\n.")
+
+
+    # TOPSAR-Split slave descending
+    parameters_splits_descending = HashMap()
+    parameters_splits_descending.put("firstBurstIndex", str(last_burst_index))
+    parameters_splits_descending.put("lastBurstIndex", str(first_burst_index))
+    parameters_splits_descending.put("selectedPolarisations", "VV")
+    parameters_splits_descending.put("subswath", "IW"+ str(swath1))
+    split_s_descending = GPF.createProduct("TOPSAR-Split", parameters_splits_descending, slave_descending)
+
+
+    if split_s_descending:
+        print(".\n.\nTOPSAR-Split slave descending performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: TOPSAR-Split slave descending performance failed.\n.\n.")
+
+else:
+    #REPETITION FOR BOTH SUBSWATHS
+    #TOPSAR-Split master descending (1)
+    parameters_splitm_descending = HashMap()
+    parameters_splitm_descending.put("firstBurstIndex", str(last_burst_index))
+    parameters_splitm_descending.put("lastBurstIndex", str(first_burst_index))
+    parameters_splitm_descending.put("selectedPolarisations", "VV")
+    parameters_splitm_descending.put("subswath", "IW"+str(swath1)) 
+    split_m_descending_iw1 = GPF.createProduct("TOPSAR-Split", parameters_splitm_descending, master_descending)
+
+    if split_m_descending_iw1:
+        print(".\n.\nTOPSAR-Split master descending (1) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: TOPSAR-Split performance master descending (1) failed.\n.\n.")
+
+
+    # TOPSAR-Split slave descending (1)
+    parameters_splits_descending = HashMap()
+    parameters_splits_descending.put("firstBurstIndex", str(last_burst_index))
+    parameters_splits_descending.put("lastBurstIndex", str(first_burst_index))
+    parameters_splits_descending.put("selectedPolarisations", "VV")
+    parameters_splits_descending.put("subswath", "IW"+str(swath1))
+    split_s_descending_iw1 = GPF.createProduct("TOPSAR-Split", parameters_splits_descending, slave_descending)
+ 
+    if split_s_descending_iw1:
+        print(".\n.\nTOPSAR-Split slave descending (1) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: TOPSAR-Split slave descending (1) performance failed.\n.\n.")
+
+
+    #TOPSAR-Split master descending (2)
+    parameters_splitm_descending = HashMap()
+    parameters_splitm_descending.put("firstBurstIndex", str(last_burst_index))
+    parameters_splitm_descending.put("lastBurstIndex", str(first_burst_index))
+    parameters_splitm_descending.put("selectedPolarisations", "VV")
+    parameters_splitm_descending.put("subswath", "IW"+str(swath2)) 
+    split_m_descending_iw2 = GPF.createProduct("TOPSAR-Split", parameters_splitm_descending, master_descending)  
+
+    if split_m_descending_iw2:
+        print(".\n.\nTOPSAR-Split master descending (2) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: TOPSAR-Split performance master descending (2) failed.\n.\n.")
+
+
+    # TOPSAR-Split slave descending (2)
+    parameters_splits_descending = HashMap()
+    parameters_splits_descending.put("firstBurstIndex", str(last_burst_index))
+    parameters_splits_descending.put("lastBurstIndex", str(first_burst_index))
+    parameters_splits_descending.put("selectedPolarisations", "VV")
+    parameters_splits_descending.put("subswath", "IW"+str(swath2))
+    split_s_descending_iw2 = GPF.createProduct("TOPSAR-Split", parameters_splits_descending, slave_descending)  
+
+    if split_s_descending_iw2:
+        print(".\n.\nTOPSAR-Split slave descending (2) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: TOPSAR-Split slave descending (2) performance failed.\n.\n.")
+
+
+
+#Apply-Orbit-File master descending
+if swath1 == swath2:
+    parameters_orbitm_descending = HashMap()
+    parameters_orbitm_descending.put("continueOnFail", 'false')
+    parameters_orbitm_descending.put('orbitType', 'Sentinel Precise (Auto Download)')
+    parameters_orbitm_descending.put('polyDegree','3')
+    apply_orbitm_descending = GPF.createProduct("Apply-Orbit-File", parameters_orbitm_descending, split_m_descending)
+   
+    if apply_orbitm_descending:
+        print(".\n.\nApply-Orbit-File master descending performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: Apply-Orbit-File master descending performance failed.\n.\n.")
+
+
+    #Apply-Orbit-File slave descending 
+    parameters_orbits_descending = HashMap()
+    parameters_orbits_descending.put("continueOnFail", 'false')
+    parameters_orbits_descending.put('orbitType', 'Sentinel Precise (Auto Download)')
+    parameters_orbits_descending.put('polyDegree','3')
+    apply_orbits_descending = GPF.createProduct("Apply-Orbit-File", parameters_orbits_descending, split_s_descending)
+    
+
+    if apply_orbits_descending:
+        print(".\n.\nApply-Orbit-File slave descending performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: Apply-Orbit-File slave descending performance failed.\n.\n.")
+
+else:
+	#REPETITION FOR BOTH DIFFERENT SUBSWATHS
+    #Apply-Orbit-File master descending (1)
+    parameters_orbitm_descending = HashMap()
+    parameters_orbitm_descending.put("continueOnFail", 'false')
+    parameters_orbitm_descending.put('orbitType', 'Sentinel Precise (Auto Download)')
+    parameters_orbitm_descending.put('polyDegree','3')
+    apply_orbitm_descending_iw1 = GPF.createProduct("Apply-Orbit-File", parameters_orbitm_descending, split_m_descending_iw1)
+   
+    if apply_orbitm_descending_iw1:
+        print(".\n.\nApply-Orbit-File master descending (1) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: Apply-Orbit-File master descending (1) performance failed.\n.\n.")
+
+
+    #Apply-Orbit-File slave descending (1)
+    parameters_orbits_descending = HashMap()
+    parameters_orbits_descending.put("continueOnFail", 'false')
+    parameters_orbits_descending.put('orbitType', 'Sentinel Precise (Auto Download)')
+    parameters_orbits_descending.put('polyDegree','3')
+    apply_orbits_descending_iw1 = GPF.createProduct("Apply-Orbit-File", parameters_orbits_descending, split_s_descending_iw1)
+    
+
+    if apply_orbits_descending_iw1:
+        print(".\n.\nApply-Orbit-File slave descending (1) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: Apply-Orbit-File slave descending (1) performance failed.\n.\n.")
+	
+
+    #Apply-Orbit-File master descending (2)
+    parameters_orbitm_descending = HashMap()
+    parameters_orbitm_descending.put("continueOnFail", 'false')
+    parameters_orbitm_descending.put('orbitType', 'Sentinel Precise (Auto Download)')
+    parameters_orbitm_descending.put('polyDegree','3')
+    apply_orbitm_descending_iw2 = GPF.createProduct("Apply-Orbit-File", parameters_orbitm_descending, split_m_descending_iw2)
+   
+    if apply_orbitm_descending_iw2:
+        print(".\n.\nApply-Orbit-File master descending (2) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: Apply-Orbit-File master descending (2) performance failed.\n.\n.")
+
+
+    #Apply-Orbit-File slave descending (2)
+    parameters_orbits_descending = HashMap()
+    parameters_orbits_descending.put("continueOnFail", 'false')
+    parameters_orbits_descending.put('orbitType', 'Sentinel Precise (Auto Download)')
+    parameters_orbits_descending.put('polyDegree','3')
+    apply_orbits_descending_iw2 = GPF.createProduct("Apply-Orbit-File", parameters_orbits_descending, split_s_descending_iw2)
+    
+
+    if apply_orbits_descending_iw2:
+        print(".\n.\nApply-Orbit-File slave descending (2) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nERROR: Apply-Orbit-File slave descending (2) performance failed.\n.\n.")
+
+
+
+#Back-Geocoding -- Geocoding of the two input products. NOTE: for default, SNAP insert the data in the order SLAVE-MASTER
+#Back-Geocoding descending
+if swath1 == swath2:  
+    parameters_backgeocoding_descending = HashMap()
+    parameters_backgeocoding_descending.put("demName", "SRTM 3Sec")
+    parameters_backgeocoding_descending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
+    parameters_backgeocoding_descending.put("disableReramp", "false")
+    parameters_backgeocoding_descending.put("externalDEMNoDataValue", "0")
+    parameters_backgeocoding_descending.put("maskOutAreaWithoutElevation", "true")
+    parameters_backgeocoding_descending.put("outputDerampDemodPhase", "false")
+    parameters_backgeocoding_descending.put("outputRangeAzimuthOffset", "false")
+    parameters_backgeocoding_descending.put("resamplingType", "BILINEAR_INTERPOLATION")
+    merge = [apply_orbitm_descending, apply_orbits_descending]
+    backgeocoding_descending = GPF.createProduct("Back-Geocoding", parameters_backgeocoding_descending, merge)
+    output = Path.joinpath(path_products_descending, "back_geocoding_descending")
+    ProductIO.writeProduct(backgeocoding_descending, str(output), "BEAM-DIMAP")
+    path = Path.joinpath(path_products_descending, "back_geocoding_descending.dim")
+    bgeocoding_descending = ProductIO.readProduct(str(path))
+
+    if backgeocoding_descending:
+        print(".\n.\nBack-Geocoding ascending performed correctly!\n.\n.")
+    else:
+        print(".\n.\nBack-Geocoding ascending performance failed.\n.\n.")
+
+else:
+    #REPETITION FOR BOTH SUBSWATHS
+    #Back-Geocoding descending (1)
+    parameters_backgeocoding_descending = HashMap()
+    parameters_backgeocoding_descending.put("demName", "SRTM 3Sec")
+    parameters_backgeocoding_descending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
+    parameters_backgeocoding_descending.put("disableReramp", "false")
+    parameters_backgeocoding_descending.put("externalDEMNoDataValue", "0")
+    parameters_backgeocoding_descending.put("maskOutAreaWithoutElevation", "true")
+    parameters_backgeocoding_descending.put("outputDerampDemodPhase", "false")
+    parameters_backgeocoding_descending.put("outputRangeAzimuthOffset", "false")
+    parameters_backgeocoding_descending.put("resamplingType", "BILINEAR_INTERPOLATION")
+    merge = [apply_orbitm_descending_iw1, apply_orbits_descending_iw1]
+    backgeocoding_descending_iw1 = GPF.createProduct("Back-Geocoding", parameters_backgeocoding_descending, merge)
+    output = Path.joinpath(path_products_descending, "back_geocoding_descending_iw1")
+    ProductIO.writeProduct(backgeocoding_descending_iw1, str(output), "BEAM-DIMAP")
+    path1 = Path.joinpath(path_products_descending, "back_geocoding_descending_iw1.dim")
+    bgeocoding_descending1 = ProductIO.readProduct(str(path1))
+
+    if backgeocoding_descending_iw1:
+        print(".\n.\nBack-Geocoding descending (1) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nBack-Geocoding descending (1) performance failed.\n.\n.")
+
+	#Back-Geocoding descending (2)
+    parameters_backgeocoding_descending = HashMap()
+    parameters_backgeocoding_descending.put("demName", "SRTM 3Sec")
+    parameters_backgeocoding_descending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
+    parameters_backgeocoding_descending.put("disableReramp", "false")
+    parameters_backgeocoding_descending.put("externalDEMNoDataValue", "0")
+    parameters_backgeocoding_descending.put("maskOutAreaWithoutElevation", "true")
+    parameters_backgeocoding_descending.put("outputDerampDemodPhase", "false")
+    parameters_backgeocoding_descending.put("outputRangeAzimuthOffset", "false")
+    parameters_backgeocoding_descending.put("resamplingType", "BILINEAR_INTERPOLATION")
+    merge = [apply_orbitm_descending_iw2, apply_orbits_descending_iw2]
+    backgeocoding_descending_iw2 = GPF.createProduct("Back-Geocoding", parameters_backgeocoding_descending, merge)
+    output = Path.joinpath(path_products_descending, "back_geocoding_descending_iw2")
+    ProductIO.writeProduct(backgeocoding_descending_iw2, str(output), "BEAM-DIMAP")
+    path2 = Path.joinpath(path_products_descending, "back_geocoding_descending_iw2.dim")
+    bgeocoding_descending2 = ProductIO.readProduct(str(path1))   
+
+    if backgeocoding_descending_iw2:
+        print(".\n.\nBack-Geocoding descending (2) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nBack-Geocoding descending (2) performance failed.\n.\n.")
+
+
+
+# Enhanced-Spectral-Diversity descending
+if swath1 == swath2:
+    with open(graph_enhanced_spectral_diversity, "r") as xml_esd:
+        tree = et.parse(xml_esd)
+
+    output = Path.joinpath(path_products_descending, "esd_descending.dim")
+    root = tree.getroot()
+    file_input = root.xpath("//node/parameters/file")
+    file_input[0].text = str(path)
+    file_input[1].text = str(output)
+    et.ElementTree(root).write(str(graph_enhanced_spectral_diversity))
+
+    subprocess.run(["gpt", str(path_graph_enhanced_spectral_diversity)])
+
+    path_esd_descending = Path.joinpath(path_products_descending, "esd_descending.dim")
+    esd_descending = ProductIO.readProduct(str(path_esd_descending))
+
+else:
+    #REPETITION FOR BOTH SUBSWATHS 
+    # Enhanced-Spectral-Diversity (1)
+    with open(graph_enhanced_spectral_diversity_iw1, "r") as xml_esd_iw1:
+        tree = et.parse(xml_esd_iw1)
+
+    output1 = Path.joinpath(path_products_descending, "esd_descending_iw1.dim")
+    root = tree.getroot()
+    file_input = root.xpath("//node/parameters/file")
+    file_input[0].text = str(path1)
+    file_input[1].text = str(output1)
+    et.ElementTree(root).write(str(graph_enhanced_spectral_diversity_iw1))
+
+    subprocess.run(["gpt", str(path_graph_enhanced_spectral_diversity_iw1)])
+
+    path_esd_descending_iw1 = Path.joinpath(path_products_descending, "esd_descending_iw1.dim")
+    esd_descending_iw1 = ProductIO.readProduct(str(path_esd_descending_iw1))
+
+    # Enhanced-Spectral-Diversity ascending (2)
+    with open(graph_enhanced_spectral_diversity_iw2, "r") as xml_esd_iw2:
+        tree = et.parse(xml_esd_iw2)
+
+    output2 = Path.joinpath(path_products_descending, "esd_descending_iw2.dim")
+    root = tree.getroot()
+    file_input = root.xpath("//node/parameters/file")
+    file_input[0].text = str(path2)
+    file_input[1].text = str(output2)
+    et.ElementTree(root).write(str(graph_enhanced_spectral_diversity_iw2))
+
+    subprocess.run(["gpt", str(path_graph_enhanced_spectral_diversity_iw2)])
+
+    path_esd_descending_iw2 = Path.joinpath(path_products_descending, "esd_descending_iw2.dim")
+    esd_descending_iw2 = ProductIO.readProduct(str(path_esd_descending_iw2))
+
+
+
+#Interferogram formation
+if swath1 == swath2:
+    parameters_ifg_descending = HashMap()
+    parameters_ifg_descending.put("cohWinAz", str(cohwiaz)) 
+    parameters_ifg_descending.put("cohWinRg", str(cohwirg))
+    parameters_ifg_descending.put("demName", "SRTM 3Sec")
+    parameters_ifg_descending.put("externalDEMApplyEGM", "true")
+    parameters_ifg_descending.put("externalDEMNoDataValue", "0")
+    parameters_ifg_descending.put("includeCoherence", "true")
+    parameters_ifg_descending.put("orbitDegree", "3")
+    parameters_ifg_descending.put("outputElevation", "false")
+    parameters_ifg_descending.put("outputLatLon", "false")
+    parameters_ifg_descending.put("squarePixel", "true")
+    parameters_ifg_descending.put("srpNumberPoints", "501")
+    parameters_ifg_descending.put("srpPolynomialDegree", "5")
+    parameters_ifg_descending.put("subtractFlatEarthPhase", "true")
+    parameters_ifg_descending.put("subtractTopographicPhase", "true")
+    parameters_ifg_descending.put("tileExtensionPercent", "100")
+    interferogram_descending = GPF.createProduct("Interferogram", parameters_ifg_descending, esd_descending)
+    
+    if interferogram_descending:
+        print(".\n.\nInterferogram descending performed correctly!\n.\n.")
+    else:
+        print(".\n.\nInterferogram descending performance failed.\n.\n.")
+
+else:
+    #Interferogram descending (1)
+    parameters_ifg_descending = HashMap()
+    parameters_ifg_descending.put("cohWinAz", str(cohwiaz))
+    parameters_ifg_descending.put("cohWinRg", str(cohwirg))
+    parameters_ifg_descending.put("demName", "SRTM 3Sec")
+    parameters_ifg_descending.put("externalDEMApplyEGM", "true")
+    parameters_ifg_descending.put("externalDEMNoDataValue", "0")
+    parameters_ifg_descending.put("includeCoherence", "true")
+    parameters_ifg_descending.put("orbitDegree", "3")
+    parameters_ifg_descending.put("outputElevation", "false")
+    parameters_ifg_descending.put("outputLatLon", "false")
+    parameters_ifg_descending.put("squarePixel", "true")
+    parameters_ifg_descending.put("srpNumberPoints", "501")
+    parameters_ifg_descending.put("srpPolynomialDegree", "5")
+    parameters_ifg_descending.put("subtractFlatEarthPhase", "true")
+    parameters_ifg_descending.put("subtractTopographicPhase", "true")
+    parameters_ifg_descending.put("tileExtensionPercent", "100")
+    interferogram_descending_iw1 = GPF.createProduct("Interferogram", parameters_ifg_descending, esd_descending_iw1)
+
+    if interferogram_descending_iw1:
+        print(".\n.\nInterferogram descending (1) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nInterferogram descending (1) performance failed.\n.\n.")
+
+
+    #Interferogram descending (2)
+    parameters_ifg_descending = HashMap()
+    parameters_ifg_descending.put("cohWinAz", str(cohwiaz)) 
+    parameters_ifg_descending.put("cohWinRg", str(cohwirg))
+    parameters_ifg_descending.put("demName", "SRTM 3Sec")
+    parameters_ifg_descending.put("externalDEMApplyEGM", "true")
+    parameters_ifg_descending.put("externalDEMNoDataValue", "0")
+    parameters_ifg_descending.put("includeCoherence", "true")
+    parameters_ifg_descending.put("orbitDegree", "3")
+    parameters_ifg_descending.put("outputElevation", "false")
+    parameters_ifg_descending.put("outputLatLon", "false")
+    parameters_ifg_descending.put("squarePixel", "true")
+    parameters_ifg_descending.put("srpNumberPoints", "501")
+    parameters_ifg_descending.put("srpPolynomialDegree", "5")
+    parameters_ifg_descending.put("subtractFlatEarthPhase", "true")
+    parameters_ifg_descending.put("subtractTopographicPhase", "true")
+    parameters_ifg_descending.put("tileExtensionPercent", "100")
+    interferogram_descending_iw2 = GPF.createProduct("Interferogram", parameters_ifg_descending, esd_descending_iw2)
+
+
+    
+    if interferogram_descending_iw2:
+        print(".\n.\nInterferogram descending (2) performed correctly!\n.\n.")
+    else:
+        print(".\n.\nInterferogram descending (2) performance failed.\n.\n.")
+
+
+
+
+#TOPSAR-Deburst descending
+if swath1 == swath2:
+    parameters_deb_descending = HashMap()
+    parameters_deb_descending.put("selectedPolarisations", "VV")
+    deburst_descending = GPF.createProduct("TOPSAR-Deburst", parameters_deb_descending, interferogram_descending)
+
+    if deburst_descending:
+        print("\n.\nTOPSAR-Deburst descending performed correctly!\n.\n.")
+    else:
+        print("\n.\nTOPSAR-Deburst descending performance failed.\n.\n.")
+
+else:
+    #TOPSAR-Deburst descending (1)
+    parameters_deb_descending = HashMap()
+    parameters_deb_descending.put("selectedPolarisations", "VV")
+    topsar_deb_descending_iw1 = GPF.createProduct("TOPSAR-Deburst", parameters_deb_descending, interferogram_descending_iw1)
+
+    if topsar_deb_descending_iw1:
+        print("\n.\nTOPSAR-Deburst descending (1) performed correctly!\n.\n.")
+    else:
+        print("\n.\nTOPSAR-Deburst descending (1) performance failed.\n.\n.")
+
+    
+    #TOPSAR-Deburst descending (2)
+    parameters_deb_descending = HashMap()
+    parameters_deb_descending.put("selectedPolarisations", "VV")
+    topsar_deb_descending_iw2 = GPF.createProduct("TOPSAR-Deburst", parameters_deb_descending, interferogram_descending_iw2)
+
+    if topsar_deb_descending_iw2:
+        print("\n.\nTOPSAR-Deburst descending (2) performed correctly!\n.\n.")
+    else:
+        print("\n.\nTOPSAR-Deburst descending (2) performance failed.\n.\n.")
+
+    
+    #TOPSAR-Merge descending
+    parameters_merge_descending = HashMap()
+    parameters_merge_descending.put("selectedPolarisations", "VV")
+    merge = [topsar_deb_descending_iw1, topsar_deb_descending_iw2]
+    deburst_descending = GPF.createProduct("TOPSAR-Merge", parameters_merge_descending, merge)
+
+    if deburst_descending:
+        print("\n.\nTOPSAR-Merge descending performed correctly!\n.\n.")
+    else:
+        print("\n.\nTOPSAR-Merge descending performance failed.\n.\n.")
+
+#GoldsteinPhaseFiltering descending
+parameters_filtering_descending = HashMap()
+parameters_filtering_descending.put("alpha", "1.0")
+parameters_filtering_descending.put("coherenceThreshold", str(coherencethreshold)) 
+parameters_filtering_descending.put("FFTSizeString", str(fftsizestring)) 
+parameters_filtering_descending.put("useCoherenceMask", str(usecoherencemask))
+parameters_filtering_descending.put("windowSizeString", str(windowsizestring)) 
+filter_desc = GPF.createProduct("GoldsteinPhaseFiltering", parameters_filtering_descending, deburst_descending) 
+output = Path.joinpath(path_products_descending, "filter_descending")
+ProductIO.writeProduct(filter_desc, str(output), "BEAM-DIMAP")
+path_filter_descending = Path.joinpath(path_products_descending, "filter_descending.dim")
+filter_descending = ProductIO.readProduct(str(path_filter_descending))
+
+if filter_desc:
+    print("\n.\nGoldsteinPhaseFiltering descending performed correctly!\n.\n.")
+else:
+    print("\n.\nGoldsteinPhaseFiltering descending performance failed.\n.\n.")
+
+
+#Subset
+vertex1_list = [min_lon_aoi, max_lat_aoi]
+vertex1 = " ".join(str(x) for x in vertex1_list)
+
+vertex2_list = [max_lon_aoi, max_lat_aoi]
+vertex2 = " ".join(str(y) for y in vertex2_list)
+
+vertex3_list = [max_lon_aoi, min_lat_aoi]
+vertex3 = " ".join(str(z) for z in vertex3_list)
+
+vertex4_list = [min_lon_aoi, min_lat_aoi]
+vertex4 = " ".join(str(w) for w in vertex4_list)
+
+bands = ""
+for i in list(filter_desc.getBandNames()):
+    bands = bands + i + ","
+
+
+wkt = "POLYGON((%s, %s, %s, %s, %s))" % (vertex1, vertex2, vertex3, vertex4, vertex1)
+
+with open(graph_subset, "r") as xml_subset:
+    tree = et.parse(xml_subset)
+
+output = Path.joinpath(path_products_descending, "Subset_filter_descending.dim")
+root = tree.getroot()
+file_input = root.xpath("//node/parameters/file")
+file_input[0].text = str(path_filter_descending)
+file_input[1].text = str(output)
+georegion = root.xpath("//node/parameters/geoRegion")
+georegion[0].text = str(wkt)
+et.ElementTree(root).write(str(graph_subset))
+
+subprocess.run(["gpt", str(path_graph_subset)])
+
+
+# #Snaphu Export
+subset = Path.joinpath(path_products_descending, "Subset_filter_descending.dim")
+subset_read_descending = ProductIO.readProduct(str(subset))
+snaphuexport_folder = Path.joinpath(path_products_descending, "export")
+os.system("gpt SnaphuExport -Ssource=" + str(subset) + " -PtargetFolder=" + str(snaphuexport_folder))
+
+#Snaphu Unwrapping descending
+path_conf = Path.joinpath(snaphuexport_folder, "Subset_filter_descending\\snaphu.conf")
+file = open(str(path_conf))
+lines = file.readlines()
+code = lines[6]
+code = code[14:]
+
+path_unwrap = path_snaphu + code
+path_dir = Path.joinpath(snaphuexport_folder, "Subset_filter_descending")
+subprocess.run(path_unwrap, cwd = path_dir)
+
+
+
+# Snaphu Import descending
+filtered_prod = subset_read_descending
+unwrapping_folder = Path.joinpath(snaphuexport_folder, "Subset_filter_descending\\Unw*.snaphu.hdr")
+for unwrapped_phase in glob.glob(str(unwrapping_folder)):
+    unwrapped_phase_descending = ProductIO.readProduct(unwrapped_phase)
+products = [filtered_prod, unwrapped_phase_descending]
+parameters_import = HashMap()
+parameters_import.put("doNotKeepWeapped", "false")
+snaphu_import = GPF.createProduct("SnaphuImport", parameters_import, products)
+output = Path.joinpath(path_products_descending, "unwrapped_phase_descending")
+ProductIO.writeProduct(snaphu_import, str(output), "BEAM-DIMAP")
+path = Path.joinpath(path_products_descending, "unwrapped_phase_descending.dim")
+unwrapped_phase_descending = ProductIO.readProduct(str(path))
+
+if snaphu_import:
+    print("\n.\nDescending product from Snaphu imported correctly!\n.\n.")
+else:
+    print("\n.\nSnaphu import descending failed.\n.\n.")
+
+if unwrapped_phase:
+    print("\n.\nImported descending product written correctly!\n.\n.")
+else:
+    print("\n.\nImported descending product writing failed.\n.\n.")
+
+
+
+#Save a GeoTIFF-BigTIFF file from the unwrapped phase
+bands = ""
+for i in list(unwrapped_phase_descending.getBandNames()):
+    bands = bands + i + ","
+
+if swath1 == swath2:
+    phase_product = bands [110:146]
+
+    parameters_multilook = HashMap()
+    parameters_multilook.put("grSquarePixel", "true")
+    parameters_multilook.put("nAzLooks", 1)
+    parameters_multilook.put("nRgLooks", 1)
+    parameters_multilook.put("outputIntensity", "false")
+    parameters_multilook.put("sourceBands", str(phase_product))
+    multilook = GPF.createProduct("Multilook", parameters_multilook, unwrapped_phase_descending)
+
+    parameters_tc_descending = HashMap()
+    parameters_tc_descending.put("alignToStandardGrid", "false")
+    parameters_tc_descending.put("applyRadiometricNormalization", "false")
+    parameters_tc_descending.put("auxFile", "Latest Auxiliary File")
+    parameters_tc_descending.put("demName", "SRTM 3Sec")
+    parameters_tc_descending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
+    parameters_tc_descending.put("externalDEMNoDataValue", "0")
+    parameters_tc_descending.put("imgResamplingMethod", "BILINEAR_INTERPOLATION")
+    parameters_tc_descending.put("incidenceAngleForGamma0", "Use projected local incidence angle from DEM")
+    parameters_tc_descending.put("incidenceAngleForSigma0", "Use projected local incidence angle from DEM")
+    parameters_tc_descending.put("mapProjection", "WGS84(DD)")
+    parameters_tc_descending.put("nodataValueAtSea", "true")
+    parameters_tc_descending.put("outputComplex", "false")
+    parameters_tc_descending.put("pixelSpacingInDegree", "0")
+    parameters_tc_descending.put("pixelSpacingInMeter", "0")
+    parameters_tc_descending.put("saveBetaNought", "false")
+    parameters_tc_descending.put("saveDEM", "false")
+    parameters_tc_descending.put("saveGammaNought", "false")
+    parameters_tc_descending.put("saveIncidenceAngleFromEllipsoid", "true")
+    parameters_tc_descending.put("saveLatLon", "false")
+    parameters_tc_descending.put("saveLayoverShadowMask", "false")
+    parameters_tc_descending.put("saveLocalIncidenceAngle", "false")
+    parameters_tc_descending.put("saveProjectedLocalIncidenceAngle", "false")
+    parameters_tc_descending.put("saveSelectedSourceBand", "true")
+    parameters_tc_descending.put("saveSigmaNought", "false")
+    parameters_tc_descending.put("sourceBands", str(phase_product))
+    parameters_tc_descending.put("standardGridOriginX", "0")
+    parameters_tc_descending.put("standardGridOriginY", "0")
+    tc_descending = GPF.createProduct("Terrain-Correction", parameters_tc_descending, multilook)
+    output = Path.joinpath(path_products_descending, "interferogram_descending") 
+    ProductIO.writeProduct(tc_descending, str(output), "GeoTIFF-BigTIFF") 
+    path_descending = Path.joinpath(path_products_descending, "interferogram_descending.tif") 
+    ifg_tif_descending = ProductIO.readProduct(str(path_descending)) 
+
+    if ifg_tif_descending: 
+        print("\n.\nInterferogram tif descending product written correctly!\n.\n.") 
+    else: 
+        print("\n.\nInterferogram tif descending product writing failed.\n.\n.") 
+
+else:
+    phase_product = bands[98:130]
+
+    parameters_multilook = HashMap()
+    parameters_multilook.put("grSquarePixel", "true")
+    parameters_multilook.put("nAzLooks", 1)
+    parameters_multilook.put("nRgLooks", 1)
+    parameters_multilook.put("outputIntensity", "false")
+    parameters_multilook.put("sourceBands", str(phase_product))
+    multilook = GPF.createProduct("Multilook", parameters_multilook, unwrapped_phase_descending)
+
+    parameters_tc_descending = HashMap()
+    parameters_tc_descending.put("alignToStandardGrid", "false")
+    parameters_tc_descending.put("applyRadiometricNormalization", "false")
+    parameters_tc_descending.put("auxFile", "Latest Auxiliary File")
+    parameters_tc_descending.put("demName", "SRTM 3Sec")
+    parameters_tc_descending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
+    parameters_tc_descending.put("externalDEMNoDataValue", "0")
+    parameters_tc_descending.put("imgResamplingMethod", "BILINEAR_INTERPOLATION")
+    parameters_tc_descending.put("incidenceAngleForGamma0", "Use projected local incidence angle from DEM")
+    parameters_tc_descending.put("incidenceAngleForSigma0", "Use projected local incidence angle from DEM")
+    parameters_tc_descending.put("mapProjection", "WGS84(DD)")
+    parameters_tc_descending.put("nodataValueAtSea", "true")
+    parameters_tc_descending.put("outputComplex", "false")
+    parameters_tc_descending.put("pixelSpacingInDegree", "0")
+    parameters_tc_descending.put("pixelSpacingInMeter", "0")
+    parameters_tc_descending.put("saveBetaNought", "false")
+    parameters_tc_descending.put("saveDEM", "false")
+    parameters_tc_descending.put("saveGammaNought", "false")
+    parameters_tc_descending.put("saveIncidenceAngleFromEllipsoid", "true")
+    parameters_tc_descending.put("saveLatLon", "false")
+    parameters_tc_descending.put("saveLayoverShadowMask", "false")
+    parameters_tc_descending.put("saveLocalIncidenceAngle", "false")
+    parameters_tc_descending.put("saveProjectedLocalIncidenceAngle", "false")
+    parameters_tc_descending.put("saveSelectedSourceBand", "true")
+    parameters_tc_descending.put("saveSigmaNought", "false")
+    parameters_tc_descending.put("sourceBands", str(phase_product))
+    parameters_tc_descending.put("standardGridOriginX", "0")
+    parameters_tc_descending.put("standardGridOriginY", "0")
+    tc_descending = GPF.createProduct("Terrain-Correction", parameters_tc_descending, multilook)
+    output = Path.joinpath(path_products_descending, "interferogram_descending") 
+    ProductIO.writeProduct(tc_descending, str(output), "GeoTIFF-BigTIFF") 
+    path_descending = Path.joinpath(path_products_descending, "interferogram_descending.tif") 
+    ifg_tif_descending = ProductIO.readProduct(str(path_descending)) 
+
+    if ifg_tif_descending: 
+        print("\n.\nInterferogram tif descending product written correctly!\n.\n.") 
+    else: 
+        print("\n.\nInterferogram tif descending product writing failed.\n.\n.") 
+
+
+#PhaseToDisplacement descending
+parameters_ptd = HashMap()
+ptd_descending = GPF.createProduct("PhaseToDisplacement", parameters_ptd, unwrapped_phase_descending)
+
+if ptd_descending:
+    print("\n.\nPhaseToDisplacement descending performed correctly!\n.\n.")
+else:
+    print("\n.\nPhaseToDisplacement descending performance failed.\n.\n.")
+
+
+#Terrain-Correction descending
+parameters_tc_descending = HashMap()
+parameters_tc_descending.put("alignToStandardGrid", "false")
+parameters_tc_descending.put("applyRadiometricNormalization", "false")
+parameters_tc_descending.put("auxFile", "Latest Auxiliary File")
+parameters_tc_descending.put("demName", "SRTM 3Sec")
+parameters_tc_descending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
+parameters_tc_descending.put("externalDEMNoDataValue", "0")
+parameters_tc_descending.put("imgResamplingMethod", "BILINEAR_INTERPOLATION")
+parameters_tc_descending.put("incidenceAngleForGamma0", "Use projected local incidence angle from DEM")
+parameters_tc_descending.put("incidenceAngleForSigma0", "Use projected local incidence angle from DEM")
+parameters_tc_descending.put("mapProjection", "WGS84(DD)")
+parameters_tc_descending.put("nodataValueAtSea", "true")
+parameters_tc_descending.put("outputComplex", "false")
+parameters_tc_descending.put("pixelSpacingInDegree", "0")
+parameters_tc_descending.put("pixelSpacingInMeter", "0")
+parameters_tc_descending.put("saveBetaNought", "false")
+parameters_tc_descending.put("saveDEM", "false")
+parameters_tc_descending.put("saveGammaNought", "false")
+parameters_tc_descending.put("saveIncidenceAngleFromEllipsoid", "true")
+parameters_tc_descending.put("saveLatLon", "false")
+parameters_tc_descending.put("saveLayoverShadowMask", "false")
+parameters_tc_descending.put("saveLocalIncidenceAngle", "false")
+parameters_tc_descending.put("saveProjectedLocalIncidenceAngle", "false")
+parameters_tc_descending.put("saveSelectedSourceBand", "true")
+parameters_tc_descending.put("saveSigmaNought", "false")
+parameters_tc_descending.put("standardGridOriginX", "0")
+parameters_tc_descending.put("standardGridOriginY", "0")
+tc_descending = GPF.createProduct("Terrain-Correction", parameters_tc_descending, ptd_descending)
+output = Path.joinpath(path_products_descending, "terraincorrection_descending") 
+ProductIO.writeProduct(tc_descending, str(output), "BEAM-DIMAP") 
+path_descending = Path.joinpath(path_products_descending, "terraincorrection_descending.dim")
+terrain_correction_descending = ProductIO.readProduct(str(path_descending))
+
+if tc_descending:
+    print("\n.\nTerrain-Correction descending performed correctly!\n.\n.")
+else:
+    print("\n.\nTerrain-Correction descending performance failed.\n.\n.")
+
+if terrain_correction_descending: 
+    print("\n.\nTerrain-Correction descending product written correctly!\n.\n.") 
+else: 
+    print("\n.\nTerrain-Correction descending product writing failed.\n.\n.") 
+
+
+#Save a GeoTIFF-BigTIFF product from Terrain Correction
+tc_descending.getBand("displacement_VV")
+BandDescriptor = jpy.get_type("org.esa.snap.core.gpf.common.BandMathsOp$BandDescriptor")
+input_band_tc = BandDescriptor()
+input_band_tc.name = "displacement_VV"
+input_band_tc.type = "float32"
+input_band_tc.expression = "((displacement_VV) * (-1))"
+input_bands = jpy.array("org.esa.snap.core.gpf.common.BandMathsOp$BandDescriptor", 1)
+input_bands[0] = input_band_tc
+parameters_bm = HashMap()
+parameters_bm.put("targetBands", input_bands)
+los_tif = GPF.createProduct("BandMaths", parameters_bm, tc_descending)
+output = Path.joinpath(path_products_descending, "LOS_descending")
+ProductIO.writeProduct(los_tif, str(output), "GeoTIFF-BigTIFF")
+
+
+# --------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#Collocate -- previous step before the calculation of Horizontal-Vertical components
+sources = HashMap()
+sources.put("master", terrain_correction_ascending)
+sources.put("slave", terrain_correction_descending)
+parameters_collocate = HashMap()
+parameters_collocate.put("targetProductType", 'COLLOCATED')
+parameters_collocate.put("renameMasterComponents", "true")
+parameters_collocate.put("renameSlaveComponents", "true")
+parameters_collocate.put("masterComponentPattern", "${ORIGINAL_NAME}_M")
+parameters_collocate.put("slaveComponentPattern", "${ORIGINAL_NAME}_S")
+parameters_collocate.put("resamplingType", "NEAREST_NEIGHBOUR")
+coll_prod = GPF.createProduct("Collocate", parameters_collocate, sources)
+output = Path.joinpath(final_path, "collocate") # (x)
+ProductIO.writeProduct(coll_prod, str(output), "BEAM-DIMAP") # (x)
+path = Path.joinpath(final_path, "collocate.dim") # (x)
+collocate = ProductIO.readProduct(str(path)) # (x)
+
+
+if coll_prod:
+    print("\n.\nCollocate performed correctly!\n.\n.")
+else:
+    print("\n.\nCollocate performance failed.\n.\n.")
+
+if collocate: # (x)
+    print("\n.\nCollocate product written correctly!\n.\n.") # (x)
+else: # (x)
+    print("\n.\nCollocate product writing failed.\n.\n.") # (x)
+
+
+
+#East - West component retrieval
+collocate.getBand("displacement_VV_S")
+BandDescriptor = jpy.get_type("org.esa.snap.core.gpf.common.BandMathsOp$BandDescriptor")
+input_band_eastwest = BandDescriptor()
+input_band_eastwest.name = "displacement_VV_S"
+input_band_eastwest.type = "float32"
+input_band_eastwest.expression = "(((displacement_VV_S - displacement_VV_M)/2)/(sin(rad(incidenceAngleFromEllipsoid_S))))*(-1)"
+input_bands = jpy.array("org.esa.snap.core.gpf.common.BandMathsOp$BandDescriptor", 1)
+input_bands[0] = input_band_eastwest
+parameters_bm_eastwest = HashMap()
+parameters_bm_eastwest.put("targetBands", input_bands)
+eastwest = GPF.createProduct("BandMaths", parameters_bm_eastwest, collocate)
+output = Path.joinpath(final_path, "eastwest")
+ProductIO.writeProduct(eastwest, str(output), "GeoTIFF-BigTIFF")
+path = Path.joinpath(final_path, "eastwest.tif")
+bandmaths_east_west = ProductIO.readProduct(str(path))
+
+if eastwest:
+    print("\n.\nEast-west component performed crrectly!\n.\n.")
+else:
+    print("\n,\nEast-west component performance failed.\n.\n.")
+
+if bandmaths_east_west:
+    print("\n.\nEast-west component product written correctly!\n.\n.")
+else:
+    print("\n.\nEast-west component product writing failed.\n.\n.")
+
+
+#Vertical component retrieval
+collocate.getBand("displacement_VV_S")
+BandDescriptor = jpy.get_type("org.esa.snap.core.gpf.common.BandMathsOp$BandDescriptor")
+input_band_vertical = BandDescriptor()
+input_band_vertical.name = "displacement_VV_S"
+input_band_vertical.type = "float32"
+input_band_vertical.expression = "(((displacement_VV_S + displacement_VV_M)/2)/(cos(rad(incidenceAngleFromEllipsoid_S))))*(-1)"
+input_bands = jpy.array("org.esa.snap.core.gpf.common.BandMathsOp$BandDescriptor", 1)
+input_bands[0] = input_band_vertical
+parameters_bm_vertical = HashMap()
+parameters_bm_vertical.put("targetBands", input_bands)
+vertical = GPF.createProduct("BandMaths", parameters_bm_vertical, collocate)
+output = Path.joinpath(final_path, "vertical")
+ProductIO.writeProduct(vertical, str(output), "GeoTIFF-BigTIFF")
+path = Path.joinpath(final_path, "vertical.tif")
+bandmaths_vertical = ProductIO.readProduct(str(path))
+
+if vertical:
+    print("\n.\nVertical component performed crrectly!\n.\n.")
+else:
+    print("\n,\nVertical component performance failed.\n.\n.")
+
+if bandmaths_vertical:
+    print("\n.\nVertical component product written correctly!\n.\n.")
+else:
+    print("\n.\nVertical component product writing failed.\n.\n.")
+
+
+print("\n.\n.\n.\n!!! END OF THE PROCESSING CHAIN !!! \n.\n.\n.")
+
