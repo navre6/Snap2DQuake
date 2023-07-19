@@ -40,25 +40,112 @@ coherencethreshold = # MAXIMUM ADVICED RANGE: 0.02 - 0.5
 usecoherencemask = "" # Choose between "true" or "false"
 
 # Opening of the products and of SNAPhU, the Phase Unwrapping algorithm implemented in SNAP.
-
+# Ascending products
 path_master_ascending = "" #Insert HERE the path of the data for the master ascending product
 master_ascending = ProductIO.readProduct(path_master_ascending)
 
 path_slave_ascending = "" #Insert HERE the path of the data for the slave ascending product
 slave_ascending = ProductIO.readProduct(path_slave_ascending)
 
+# Check of the effective data -- if the inserted data's pass is effectively ascending
+first_path = (re.findall("(.*)S1", path_master_ascending))
+for x in first_path:
+    second_path = path_master_ascending.replace(str(x), "")
+zip_dot = ".zip"
+third_path = second_path.replace(str(zip_dot), "")
+fourth_path = third_path + ".SAFE/manifest.safe"
+
+folder_product = ZipFile(path_master_ascending, 'r')
+for x in folder_product.namelist():
+    if x == fourth_path:
+        definitive_path = x
+
+safe_file = folder_product.read(definitive_path)
+string = "<s1:pass>ASCENDING</s1:pass>"
+if string in str(safe_file):
+    print("ASCENDING ORBIT CORRECT FOR MASTER PRODUCT")
+else:
+    print("!!! WARNING !!! WRONG MASTER ORBIT")
+
+
+first_path = (re.findall("(.*)S1", path_slave_ascending))
+for x in first_path:
+    second_path = path_master_ascending.replace(str(x), "")
+zip_dot = ".zip"
+third_path = second_path.replace(str(zip_dot), "")
+fourth_path = third_path + ".SAFE/manifest.safe"
+
+folder_product = ZipFile(path_master_ascending, 'r')
+for x in folder_product.namelist():
+    if x == fourth_path:
+        definitive_path = x
+
+safe_file = folder_product.read(definitive_path)
+string = "<s1:pass>ASCENDING</s1:pass>"
+if string in str(safe_file):
+    print("ASCENDING ORBIT CORRECT FOR SLAVE PRODUCT")
+else:
+    print("!!! WARNING !!! WRONG SLAVE ORBIT")
+
+
+# Descending products
 path_master_descending = "" #Insert HERE the path of the data for the master descending product
 master_descending = ProductIO.readProduct(path_master_descending)
 
 path_slave_descending = "" #Insert HERE the path of the data for the slave descending product
 slave_descending = ProductIO.readProduct(path_slave_descending)
 
+# Check of the effective data -- if the inserted data's pass is effectively descending
+first_path = (re.findall("(.*)S1", path_master_ascending))
+for x in first_path:
+    second_path = path_master_ascending.replace(str(x), "")
+zip_dot = ".zip"
+third_path = second_path.replace(str(zip_dot), "")
+fourth_path = third_path + ".SAFE/manifest.safe"
+
+folder_product = ZipFile(path_master_ascending, 'r')
+for x in folder_product.namelist():
+    if x == fourth_path:
+        definitive_path = x
+
+safe_file = folder_product.read(definitive_path)
+string = "<s1:pass>DESCENDING</s1:pass>"
+if string in str(safe_file):
+    print("ASCENDING ORBIT CORRECT FOR MASTER PRODUCT")
+else:
+    print("!!! WARNING !!! WRONG MASTER ORBIT")
+
+
+
+first_path = (re.findall("(.*)S1", path_slave_ascending))
+for x in first_path:
+    second_path = path_master_ascending.replace(str(x), "")
+zip_dot = ".zip"
+third_path = second_path.replace(str(zip_dot), "")
+fourth_path = third_path + ".SAFE/manifest.safe"
+
+folder_product = ZipFile(path_master_ascending, 'r')
+for x in folder_product.namelist():
+    if x == fourth_path:
+        definitive_path = x
+
+safe_file = folder_product.read(definitive_path)
+string = "<s1:pass>DESCENDING</s1:pass>"
+if string in str(safe_file):
+    print("ASCENDING ORBIT CORRECT FOR SLAVE PRODUCT")
+else:
+    print("!!! WARNING !!! WRONG SLAVE ORBIT")
+
+
+# Insertion of SNAPhU
 path_snaphu = "" # path of where snaphu.exe is
 
+# Insertion of the paths where to locate the products
 path_products_ascending = Path("") # path of the folder in which the ascending products will be written
 path_products_descending = Path("") # path of the folder in which the descending products will be written
 final_path = Path("") # path of the folder in which put the final product of the 2D displacement
 
+# Insertion of the paths of .xml files to perform correctly some problematic operators
 path_graph_enhanced_spectral_diversity = "" #path of where Ehanced Spectral Diversity graph .xml file is
 graph_enhanced_spectral_diversity = r"" #insert in quotes the same path of path_enhanced_spectral_diversity
 
