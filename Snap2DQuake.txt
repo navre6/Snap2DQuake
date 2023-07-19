@@ -96,14 +96,14 @@ path_slave_descending = "" #Insert HERE the path of the data for the slave desce
 slave_descending = ProductIO.readProduct(path_slave_descending)
 
 # Check of the effective data -- if the inserted data's pass is effectively descending
-first_path = (re.findall("(.*)S1", path_master_ascending))
+first_path = (re.findall("(.*)S1", path_master_descending))
 for x in first_path:
-    second_path = path_master_ascending.replace(str(x), "")
+    second_path = path_master_descending.replace(str(x), "")
 zip_dot = ".zip"
 third_path = second_path.replace(str(zip_dot), "")
 fourth_path = third_path + ".SAFE/manifest.safe"
 
-folder_product = ZipFile(path_master_ascending, 'r')
+folder_product = ZipFile(path_master_descending, 'r')
 for x in folder_product.namelist():
     if x == fourth_path:
         definitive_path = x
@@ -111,20 +111,20 @@ for x in folder_product.namelist():
 safe_file = folder_product.read(definitive_path)
 string = "<s1:pass>DESCENDING</s1:pass>"
 if string in str(safe_file):
-    print("ASCENDING ORBIT CORRECT FOR MASTER PRODUCT")
+    print("DESCENDING ORBIT CORRECT FOR MASTER PRODUCT")
 else:
     print("!!! WARNING !!! WRONG MASTER ORBIT")
 
 
 
-first_path = (re.findall("(.*)S1", path_slave_ascending))
+first_path = (re.findall("(.*)S1", path_slave_descending))
 for x in first_path:
-    second_path = path_master_ascending.replace(str(x), "")
+    second_path = path_slave_descending.replace(str(x), "")
 zip_dot = ".zip"
 third_path = second_path.replace(str(zip_dot), "")
 fourth_path = third_path + ".SAFE/manifest.safe"
 
-folder_product = ZipFile(path_master_ascending, 'r')
+folder_product = ZipFile(path_slave_descending, 'r')
 for x in folder_product.namelist():
     if x == fourth_path:
         definitive_path = x
@@ -132,7 +132,7 @@ for x in folder_product.namelist():
 safe_file = folder_product.read(definitive_path)
 string = "<s1:pass>DESCENDING</s1:pass>"
 if string in str(safe_file):
-    print("ASCENDING ORBIT CORRECT FOR SLAVE PRODUCT")
+    print("DESCENDING ORBIT CORRECT FOR SLAVE PRODUCT")
 else:
     print("!!! WARNING !!! WRONG SLAVE ORBIT")
 
