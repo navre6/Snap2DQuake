@@ -8,8 +8,15 @@ In the repository, the user can find:
 -snappy.properties .txt file
 -snappy folder, which contains all the features to execute Snap2DQuake, including snaphu.exe
 
-The authors advice to download every item and to send them in folder which path is easy to reach;
-Moreover, the authors strongly advice to the user to insert snappy folder and snappy.properties in a same folder, to call "snap-python", but to keep the .txt file and the folder separated.
+The authors advice to download every item (ascending and descending products) and to send them in a main folder (related to the single case study) which path is easy to reach, and to create two empty folders called "ascending" and "descending" inside the main folder. (look to the image below)
+
+![image](https://github.com/navre6/Snap2DQuake/assets/134698198/3ddadca9-ca74-4778-8bde-ea2e9c7c5fbb)
+
+
+Moreover, the authors strongly advice to the user to insert snappy folder and snappy properties file in a same folder, to call "snap-python", but to keep the .txt file and the folder separated. (look to the image below)
+
+![image](https://github.com/navre6/Snap2DQuake/assets/134698198/6055817a-cd0c-48d7-922c-eb13cb659fb7)
+
 
 To make the snap.yaml environment available, import it on Anaconda.
 
