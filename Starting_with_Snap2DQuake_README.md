@@ -8,6 +8,9 @@ In the repository, the user can find:
 -an example of a snappy.properties file
 -snappy folder, which contains all the features to execute Snap2DQuake, including snaphu.exe
 
+BEFORE STARTING:
+Snappy needs to be continuously updated, so if some steps explained in this READ.ME regarding the interpreter and environment setting give strong problems, the authors advice to download SNAP ESA software from the link indicated in the paper Occhipinti et al. (2023) and to able the option "Python" during the installing process.
+This will allow the user to have a new snap-python folder. ATTENTION: THIS EVENTUAL NEW FOLDER DOESN'T HAVE TO SUBSTITUTE THE ONE UPLOADED IN THIS REPOSITORY, because this latter contains saphu.exe, that isn't available in SNAP ESA software!!!
 
 The authors advice to download every item (ascending and descending products) and to send them in a main folder (related to the single case study) which path is easy to reach, and to create two empty folders called "ascending" and "descending" inside the main folder. (look to the image below)
 
@@ -18,10 +21,8 @@ Moreover, the authors strongly advice to the user to insert snappy folder and sn
 
 ![image](https://github.com/navre6/Snap2DQuake/assets/134698198/6055817a-cd0c-48d7-922c-eb13cb659fb7)
 
+the .xml file must be put into a fixed folder, that will be the same for each case study the user will analyse.
 
 To make the snap.yaml environment available, import it on Anaconda.
-
-Snappy needs to be continuously updated, so if it gives strong problems, the authors advice to download SNAP ESA software from the link indicated in the paper Occhipinti et al. (2023) and to able the option "Python" during the installing process.
-This will allow the user to have a new snap-python folder. ATTENTION: THIS EVENTUAL NEW FOLDER DOESN'T HAVE TO SUBSTITUTE THE ONE UPLOADED IN THIS REPOSITORY, because this latter contains saphu.exe, that isn't available in SNAP ESA software!!!
 
 Any new update will be available in this README.md file
