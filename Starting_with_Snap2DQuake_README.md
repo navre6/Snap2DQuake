@@ -5,8 +5,9 @@ In the repository, the user can find:
 -Snap2DQuake script, to directly copy-paste in your Python editor, and in which the user can find some instruction to know where to insert all the necessary input data.
 -xml_files folder, in which are contained the graph in .xml format to reproduces some operators of SNAP without using snappy. These processes are automatic.
 -snap.yaml, the environment in which run Snap2DQuake
--snappy.properties .txt file
+-an example of a snappy.properties file
 -snappy folder, which contains all the features to execute Snap2DQuake, including snaphu.exe
+
 
 The authors advice to download every item (ascending and descending products) and to send them in a main folder (related to the single case study) which path is easy to reach, and to create two empty folders called "ascending" and "descending" inside the main folder. (look to the image below)
 
