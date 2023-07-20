@@ -40,102 +40,99 @@ coherencethreshold = # MAXIMUM ADVICED RANGE: 0.02 - 0.5
 usecoherencemask = "" # Choose between "true" or "false"
 
 # Opening of the products and of SNAPhU, the Phase Unwrapping algorithm implemented in SNAP.
-# Ascending products
-path_master_ascending = "" #Insert HERE the path of the data for the master ascending product
+
+# Opening of the products and of SNAPhU, the Phase Unwrapping algorithm implemented in SNAP.
+path_master_file1 =
+path_master_file2 =
+path_slave_file1 =
+path_slave_file2 =
+
+# Check of the effective data -- if the inserted data's pass is effectively ascending or descending and association of new variables for each orbit
+# Associationo of variables for master products
+first_path = (re.findall("(.*)S1", path_master_file1))
+for x in first_path:
+    second_path = path_master_file1.replace(str(x), "")
+zip_dot = ".zip"
+third_path = second_path.replace(str(zip_dot), "")
+fourth_path = third_path + ".SAFE/manifest.safe"
+
+folder_product = ZipFile(path_master_file1, 'r')
+for x in folder_product.namelist():
+    if x == fourth_path:
+        definitive_path = x
+
+safe_file = folder_product.read(definitive_path)
+string = "<s1:pass>ASCENDING</s1:pass>"
+if string in str(safe_file):
+    path_master_ascending = path_master_file1
+else:
+    path_master_descending = path_master_file1
+
+
+first_path = (re.findall("(.*)S1", path_master_file2))
+for x in first_path:
+    second_path = path_master_file2.replace(str(x), "")
+zip_dot = ".zip"
+third_path = second_path.replace(str(zip_dot), "")
+fourth_path = third_path + ".SAFE/manifest.safe"
+
+folder_product = ZipFile(path_master_file2, 'r')
+for x in folder_product.namelist():
+    if x == fourth_path:
+        definitive_path = x
+
+safe_file = folder_product.read(definitive_path)
+string = "<s1:pass>ASCENDING</s1:pass>"
+if string in str(safe_file):
+    path_master_ascending = path_master_file2
+else:
+    path_master_descending = path_master_file2
+
+# Association of variables for slave products
+first_path = (re.findall("(.*)S1", path_slave_file1))
+for x in first_path:
+    second_path = path_slave_file1.replace(str(x), "")
+zip_dot = ".zip"
+third_path = second_path.replace(str(zip_dot), "")
+fourth_path = third_path + ".SAFE/manifest.safe"
+
+folder_product = ZipFile(path_slave_file1, 'r')
+for x in folder_product.namelist():
+    if x == fourth_path:
+        definitive_path = x
+
+safe_file = folder_product.read(definitive_path)
+string = "<s1:pass>ASCENDING</s1:pass>"
+if string in str(safe_file):
+    path_slave_ascending = path_slave_file1
+else:
+    path_slave_descending = path_slave_file1
+
+
+first_path = (re.findall("(.*)S1", path_slave_file2))
+for x in first_path:
+    second_path = path_slave_file2.replace(str(x), "")
+zip_dot = ".zip"
+third_path = second_path.replace(str(zip_dot), "")
+fourth_path = third_path + ".SAFE/manifest.safe"
+
+folder_product = ZipFile(path_slave_file2, 'r')
+for x in folder_product.namelist():
+    if x == fourth_path:
+        definitive_path = x
+
+safe_file = folder_product.read(definitive_path)
+string = "<s1:pass>ASCENDING</s1:pass>"
+if string in str(safe_file):
+    path_slave_ascending = path_slave_file2
+else:
+    path_slave_descending = path_slave_file2
+
+# Reading of ascending and descending products
 master_ascending = ProductIO.readProduct(path_master_ascending)
-
-path_slave_ascending = "" #Insert HERE the path of the data for the slave ascending product
 slave_ascending = ProductIO.readProduct(path_slave_ascending)
-
-# Check of the effective data -- if the inserted data's pass is effectively ascending
-first_path = (re.findall("(.*)S1", path_master_ascending))
-for x in first_path:
-    second_path = path_master_ascending.replace(str(x), "")
-zip_dot = ".zip"
-third_path = second_path.replace(str(zip_dot), "")
-fourth_path = third_path + ".SAFE/manifest.safe"
-
-folder_product = ZipFile(path_master_ascending, 'r')
-for x in folder_product.namelist():
-    if x == fourth_path:
-        definitive_path = x
-
-safe_file = folder_product.read(definitive_path)
-string = "<s1:pass>ASCENDING</s1:pass>"
-if string in str(safe_file):
-    print("ASCENDING ORBIT CORRECT FOR MASTER PRODUCT")
-else:
-    print("!!! WARNING !!! WRONG MASTER ORBIT")
-
-
-first_path = (re.findall("(.*)S1", path_slave_ascending))
-for x in first_path:
-    second_path = path_master_ascending.replace(str(x), "")
-zip_dot = ".zip"
-third_path = second_path.replace(str(zip_dot), "")
-fourth_path = third_path + ".SAFE/manifest.safe"
-
-folder_product = ZipFile(path_master_ascending, 'r')
-for x in folder_product.namelist():
-    if x == fourth_path:
-        definitive_path = x
-
-safe_file = folder_product.read(definitive_path)
-string = "<s1:pass>ASCENDING</s1:pass>"
-if string in str(safe_file):
-    print("ASCENDING ORBIT CORRECT FOR SLAVE PRODUCT")
-else:
-    print("!!! WARNING !!! WRONG SLAVE ORBIT")
-
-
-# Descending products
-path_master_descending = "" #Insert HERE the path of the data for the master descending product
 master_descending = ProductIO.readProduct(path_master_descending)
-
-path_slave_descending = "" #Insert HERE the path of the data for the slave descending product
 slave_descending = ProductIO.readProduct(path_slave_descending)
-
-# Check of the effective data -- if the inserted data's pass is effectively descending
-first_path = (re.findall("(.*)S1", path_master_descending))
-for x in first_path:
-    second_path = path_master_descending.replace(str(x), "")
-zip_dot = ".zip"
-third_path = second_path.replace(str(zip_dot), "")
-fourth_path = third_path + ".SAFE/manifest.safe"
-
-folder_product = ZipFile(path_master_descending, 'r')
-for x in folder_product.namelist():
-    if x == fourth_path:
-        definitive_path = x
-
-safe_file = folder_product.read(definitive_path)
-string = "<s1:pass>DESCENDING</s1:pass>"
-if string in str(safe_file):
-    print("DESCENDING ORBIT CORRECT FOR MASTER PRODUCT")
-else:
-    print("!!! WARNING !!! WRONG MASTER ORBIT")
-
-
-
-first_path = (re.findall("(.*)S1", path_slave_descending))
-for x in first_path:
-    second_path = path_slave_descending.replace(str(x), "")
-zip_dot = ".zip"
-third_path = second_path.replace(str(zip_dot), "")
-fourth_path = third_path + ".SAFE/manifest.safe"
-
-folder_product = ZipFile(path_slave_descending, 'r')
-for x in folder_product.namelist():
-    if x == fourth_path:
-        definitive_path = x
-
-safe_file = folder_product.read(definitive_path)
-string = "<s1:pass>DESCENDING</s1:pass>"
-if string in str(safe_file):
-    print("DESCENDING ORBIT CORRECT FOR SLAVE PRODUCT")
-else:
-    print("!!! WARNING !!! WRONG SLAVE ORBIT")
-
 
 # Insertion of SNAPhU
 path_snaphu = "" # path of where snaphu.exe is
