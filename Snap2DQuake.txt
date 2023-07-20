@@ -40,12 +40,10 @@ coherencethreshold = # MAXIMUM ADVICED RANGE: 0.02 - 0.5
 usecoherencemask = "" # Choose between "true" or "false"
 
 # Opening of the products and of SNAPhU, the Phase Unwrapping algorithm implemented in SNAP.
-
-# Opening of the products and of SNAPhU, the Phase Unwrapping algorithm implemented in SNAP.
-path_master_file1 =
-path_master_file2 =
-path_slave_file1 =
-path_slave_file2 =
+path_master_file1 = "" # insert here the path of one of the two master products -- Check the date of the product
+path_master_file2 = "" # insert here the path of one of the two master products -- Check the date of the product
+path_slave_file1 = "" # insert here the path of one of the two slave products -- Check the date of the product
+path_slave_file2 = "" # insert here the path of one of the two slave products -- Check the date of the product
 
 # Check of the effective data -- if the inserted data's pass is effectively ascending or descending and association of new variables for each orbit
 # Associationo of variables for master products
