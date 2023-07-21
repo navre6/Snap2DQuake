@@ -22,7 +22,7 @@ from snappy import Product, ProductIO, ProductUtils, GPF, HashMap, jpy
 from lxml import etree as et
 
 # COMPLETE WORKFLOW TO OBTAIN DISPLACEMENT MAPS IN LOS AND 2 DIRECTIONS (E-W COMPONENT AND VERTICAL COMPONENTS) USING DINSAR ON SENTINEL-1 AND WITH SNAP OPERATORS
-# THE TOOL IS COMPLETELY AUTOMATHIC. THE ONLY PARAMETERS TO INSERT MANUALLY ARE:
+# THE TOOL IS COMPLETELY AUTOMATIC. THE ONLY PARAMETERS TO INSERT MANUALLY ARE:
 # - Path Master / Slave for both Ascending / Descending orbits
 # - Path of the directories where to put the products for ascending, descending, and final products
 # - Selection of the Area of Interest (AOI)
