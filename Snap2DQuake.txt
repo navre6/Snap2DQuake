@@ -199,10 +199,14 @@ else:
     print(".\n.\nERROR: Descending slave product reading failed.\n.\n.")
 
 
+# DEFINE AOI COORDINATES -- DECIMAL COORDINATES (FORMAT: 12.345) USE GOOGLE EARTH COORDINATES
+# INSERTION OF THE VALUES WITH DEPENDENCE ON THE LOCATION OF THE AOI -- because the rectangular shape is manteined:
+# - RIGHT OF GREENWICH, NORTH OF EQUATOR: min_lat_aoi < max_lat_aoi ; min_lon_aoi < max_lon_aoi
+# - RIGHT OF GREENWICH, SOUTH OF EQUATOR: max_lat_aoi < min_lat_aoi ; min_lon_aoi < max_lon_aoi
+# - LEFT OF GREENWICH, NORTH OF EQUATOR: min_lat_aoi < max_lat_aoi ; max_lon_aoi < min_lon_aoi
+# - LEFT OF GREENWICH, NORTH OF EQUATOR: max_lat_aoi < min_lat_aoi ; max_lon_aoi < min_lon_aoi
+# NB. The rectangular shape of the AOI depends on the location with respect to the Equator and Greenwich meridian. Use the "-" sign for latitudes at the South of Equator, and for longitudes at the left of Greenwich meridian
 
-
-
-#Define AOI coordinates -- DECIMAL COORDINATES (FORMAT: 12.345) USE GOOGLE EARTH COORDINATES
 max_lon_aoi = 
 max_lat_aoi = 
 min_lon_aoi = 
