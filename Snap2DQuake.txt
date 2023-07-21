@@ -202,11 +202,11 @@ else:
 
 
 
-#Define AOI coordinates -- DECIMAL COORDINATES (FORMAT: 12.345)
-max_lon_aoi = 22.489
-max_lat_aoi = 39.885
-min_lon_aoi = 21.957
-min_lat_aoi = 39.542
+#Define AOI coordinates -- DECIMAL COORDINATES (FORMAT: 12.345) USE GOOGLE EARTH COORDINATES
+max_lon_aoi = 
+max_lat_aoi = 
+min_lon_aoi = 
+min_lat_aoi = 
 
 
 aoi = np.array([min_lon_aoi, max_lat_aoi, max_lon_aoi, min_lat_aoi])
