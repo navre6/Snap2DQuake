@@ -202,7 +202,7 @@ else:
 
 
 
-#Definire AOI coordinates -- DECIMAL COORDINATES (FORMAT: 12.345)
+#Define AOI coordinates -- DECIMAL COORDINATES (FORMAT: 12.345)
 max_lon_aoi = 22.489
 max_lat_aoi = 39.885
 min_lon_aoi = 21.957
