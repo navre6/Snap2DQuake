@@ -9,15 +9,22 @@ This will allow the user to have a new snap-python folder. ATTENTION: THIS EVENT
 This repository contains all the elements needed to run Snap2DQuake.
 In the repository, the user can find:
 a) Snap2DQuake script
+
 b) xml_files folder
+
 c) snap.yaml
+
 d) an example of a snappy.properties file
+
 e) snappy folder, which contains all the features to execute Snap2DQuake, including snaphu.exe
 
 
 a) Snap2DQuake file is the file containing the script, to directly copy-paste in your Python editor, and in which the user can find some instruction to know where to insert all the necessary input data.
+
 b) .xml files contain the graphs in .xml format to reproduce some operators of SNAP without using snappy. These processes are automatic. .xml files will be downloaded authomatically with all the other products. The user must put all the .xml files into a fixed folder with a easy path, that will be the same for each case study the user will analyse.
+
 c) snap.yaml is the environment in which run Snap2DQuake. To work with this environment, the user must download Anaconda (https://www.anaconda.com/), and after the installation, go in the "Environments" section and click on "Import": then, choose the snap.yaml file. In this way, the environment will be imported.
+
 d-e) The authors strongly advice to the user to insert snappy folder and snappy properties file in a same folder, to call "snap-python", but to keep the .txt file and the folder separated. (look to the image below)
 
 ![image](https://github.com/navre6/Snap2DQuake/assets/134698198/6055817a-cd0c-48d7-922c-eb13cb659fb7)
