@@ -157,4 +157,4 @@ dependencies:
       - pyqt5-sip==4.19.18
       - pyqtwebengine==5.12.1
       - zipp==3.6.0
-prefix: C:\Users\Ospite\anaconda3\envs\snap
+
