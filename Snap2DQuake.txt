@@ -46,7 +46,6 @@ path_master_file2 = "" # insert here the path of one of the two master products 
 path_slave_file1 = "" # insert here the path of one of the two slave products -- Check the date of the product
 path_slave_file2 = "" # insert here the path of one of the two slave products -- Check the date of the product
 
-
 # Reading of ascending and descending products
 master_ascending = ProductIO.readProduct(path_master_ascending)
 slave_ascending = ProductIO.readProduct(path_slave_ascending)
@@ -73,6 +72,22 @@ graph_enhanced_spectral_diversity_iw2 = r"" #insert in quotes the same path of p
 
 path_graph_subset = "" #path of where Subset graph .xml file is
 graph_subset = r"" #insert in quotes the same path of path_graph_subset
+
+
+# DEFINE AOI COORDINATES -- DECIMAL COORDINATES (FORMAT: 12.345) USE GOOGLE EARTH COORDINATES
+# INSERTION OF THE VALUES WITH DEPENDENCE ON THE LOCATION OF THE AOI -- because the rectangular shape is manteined:
+# - RIGHT OF GREENWICH, NORTH OF EQUATOR: min_lat_aoi < max_lat_aoi ; min_lon_aoi < max_lon_aoi
+# - RIGHT OF GREENWICH, SOUTH OF EQUATOR: max_lat_aoi < min_lat_aoi ; min_lon_aoi < max_lon_aoi
+# - LEFT OF GREENWICH, NORTH OF EQUATOR: min_lat_aoi < max_lat_aoi ; max_lon_aoi < min_lon_aoi
+# - LEFT OF GREENWICH, SOUTH OF EQUATOR: max_lat_aoi < min_lat_aoi ; max_lon_aoi < min_lon_aoi
+# NB. The rectangular shape of the AOI depends on the location with respect to the Equator and Greenwich meridian. Use the "-" sign for latitudes at the South of Equator, and for longitudes at the left of Greenwich meridian
+
+max_lon_aoi = 
+max_lat_aoi = 
+min_lon_aoi = 
+min_lat_aoi = 
+
+
 
 # Check of the effective data -- if the inserted data's pass is effectively ascending or descending and association of new variables for each orbit
 # Association of variables for master products
@@ -201,20 +216,7 @@ if slave_descending:
 else:
     print(".\n.\nERROR: Descending slave product reading failed.\n.\n.")
 
-
-# DEFINE AOI COORDINATES -- DECIMAL COORDINATES (FORMAT: 12.345) USE GOOGLE EARTH COORDINATES
-# INSERTION OF THE VALUES WITH DEPENDENCE ON THE LOCATION OF THE AOI -- because the rectangular shape is manteined:
-# - RIGHT OF GREENWICH, NORTH OF EQUATOR: min_lat_aoi < max_lat_aoi ; min_lon_aoi < max_lon_aoi
-# - RIGHT OF GREENWICH, SOUTH OF EQUATOR: max_lat_aoi < min_lat_aoi ; min_lon_aoi < max_lon_aoi
-# - LEFT OF GREENWICH, NORTH OF EQUATOR: min_lat_aoi < max_lat_aoi ; max_lon_aoi < min_lon_aoi
-# - LEFT OF GREENWICH, SOUTH OF EQUATOR: max_lat_aoi < min_lat_aoi ; max_lon_aoi < min_lon_aoi
-# NB. The rectangular shape of the AOI depends on the location with respect to the Equator and Greenwich meridian. Use the "-" sign for latitudes at the South of Equator, and for longitudes at the left of Greenwich meridian
-
-max_lon_aoi = 
-max_lat_aoi = 
-min_lon_aoi = 
-min_lat_aoi = 
-
+# START OF THE WORKFLOW
 
 aoi = np.array([min_lon_aoi, max_lat_aoi, max_lon_aoi, min_lat_aoi])
 
