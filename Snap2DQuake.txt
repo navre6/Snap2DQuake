@@ -20,6 +20,7 @@ sys.path.append("") # import of snappy, the module for interacting with SNAP Jav
 import snappy
 from snappy import Product, ProductIO, ProductUtils, GPF, HashMap, jpy
 from lxml import etree as et
+import re
 
 # COMPLETE WORKFLOW TO OBTAIN DISPLACEMENT MAPS IN LOS AND 2 DIRECTIONS (E-W COMPONENT AND VERTICAL COMPONENTS) USING DINSAR ON SENTINEL-1 AND WITH SNAP OPERATORS
 # THE TOOL IS COMPLETELY AUTOMATIC. THE ONLY PARAMETERS TO INSERT MANUALLY ARE:
