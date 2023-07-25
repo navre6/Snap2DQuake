@@ -46,6 +46,34 @@ path_master_file2 = "" # insert here the path of one of the two master products 
 path_slave_file1 = "" # insert here the path of one of the two slave products -- Check the date of the product
 path_slave_file2 = "" # insert here the path of one of the two slave products -- Check the date of the product
 
+
+# Reading of ascending and descending products
+master_ascending = ProductIO.readProduct(path_master_ascending)
+slave_ascending = ProductIO.readProduct(path_slave_ascending)
+master_descending = ProductIO.readProduct(path_master_descending)
+slave_descending = ProductIO.readProduct(path_slave_descending)
+
+# Insertion of SNAPhU
+path_snaphu = "" # path of where snaphu.exe is
+
+# Insertion of the paths where to locate the products
+path_products_ascending = Path("") # path of the folder in which the ascending products will be written
+path_products_descending = Path("") # path of the folder in which the descending products will be written
+final_path = Path("") # path of the folder in which put the final product of the 2D displacement
+
+# Insertion of the paths of .xml files to perform correctly some problematic operators
+path_graph_enhanced_spectral_diversity = "" #path of where Ehanced Spectral Diversity graph .xml file is
+graph_enhanced_spectral_diversity = r"" #insert in quotes the same path of path_enhanced_spectral_diversity
+
+path_graph_enhanced_spectral_diversity_iw1 = "" #path of where Ehanced Spectral Diversity graph .xml file is
+graph_enhanced_spectral_diversity_iw1 = r"" #insert in quotes the same path of path_enhanced_spectral_diversity
+
+path_graph_enhanced_spectral_diversity_iw2 = "" #path of where Ehanced Spectral Diversity graph .xml file is
+graph_enhanced_spectral_diversity_iw2 = r"" #insert in quotes the same path of path_enhanced_spectral_diversity
+
+path_graph_subset = "" #path of where Subset graph .xml file is
+graph_subset = r"" #insert in quotes the same path of path_graph_subset
+
 # Check of the effective data -- if the inserted data's pass is effectively ascending or descending and association of new variables for each orbit
 # Associationo of variables for master products
 first_path = (re.findall("(.*)S1", path_master_file1))
@@ -127,32 +155,6 @@ if string in str(safe_file):
 else:
     path_slave_descending = path_slave_file2
 
-# Reading of ascending and descending products
-master_ascending = ProductIO.readProduct(path_master_ascending)
-slave_ascending = ProductIO.readProduct(path_slave_ascending)
-master_descending = ProductIO.readProduct(path_master_descending)
-slave_descending = ProductIO.readProduct(path_slave_descending)
-
-# Insertion of SNAPhU
-path_snaphu = "" # path of where snaphu.exe is
-
-# Insertion of the paths where to locate the products
-path_products_ascending = Path("") # path of the folder in which the ascending products will be written
-path_products_descending = Path("") # path of the folder in which the descending products will be written
-final_path = Path("") # path of the folder in which put the final product of the 2D displacement
-
-# Insertion of the paths of .xml files to perform correctly some problematic operators
-path_graph_enhanced_spectral_diversity = "" #path of where Ehanced Spectral Diversity graph .xml file is
-graph_enhanced_spectral_diversity = r"" #insert in quotes the same path of path_enhanced_spectral_diversity
-
-path_graph_enhanced_spectral_diversity_iw1 = "" #path of where Ehanced Spectral Diversity graph .xml file is
-graph_enhanced_spectral_diversity_iw1 = r"" #insert in quotes the same path of path_enhanced_spectral_diversity
-
-path_graph_enhanced_spectral_diversity_iw2 = "" #path of where Ehanced Spectral Diversity graph .xml file is
-graph_enhanced_spectral_diversity_iw2 = r"" #insert in quotes the same path of path_enhanced_spectral_diversity
-
-path_graph_subset = "" #path of where Subset graph .xml file is
-graph_subset = r"" #insert in quotes the same path of path_graph_subset
 
 # Reading of the bands of the products
 band_m_ascending = ""
