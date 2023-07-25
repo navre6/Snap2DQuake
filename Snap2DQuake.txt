@@ -75,7 +75,7 @@ path_graph_subset = "" #path of where Subset graph .xml file is
 graph_subset = r"" #insert in quotes the same path of path_graph_subset
 
 # Check of the effective data -- if the inserted data's pass is effectively ascending or descending and association of new variables for each orbit
-# Associationo of variables for master products
+# Association of variables for master products
 first_path = (re.findall("(.*)S1", path_master_file1))
 for x in first_path:
     second_path = path_master_file1.replace(str(x), "")
