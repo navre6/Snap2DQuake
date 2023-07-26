@@ -46,11 +46,6 @@ path_master_file2 = "" # insert here the path of one of the two master products 
 path_slave_file1 = "" # insert here the path of one of the two slave products -- Check the date of the product
 path_slave_file2 = "" # insert here the path of one of the two slave products -- Check the date of the product
 
-# Reading of ascending and descending products
-master_ascending = ProductIO.readProduct(path_master_ascending)
-slave_ascending = ProductIO.readProduct(path_slave_ascending)
-master_descending = ProductIO.readProduct(path_master_descending)
-slave_descending = ProductIO.readProduct(path_slave_descending)
 
 # Insertion of SNAPhU
 path_snaphu = "" # path of where snaphu.exe is
@@ -169,6 +164,12 @@ if string in str(safe_file):
     path_slave_ascending = path_slave_file2
 else:
     path_slave_descending = path_slave_file2
+
+# Reading of ascending and descending products
+master_ascending = ProductIO.readProduct(path_master_ascending)
+slave_ascending = ProductIO.readProduct(path_slave_ascending)
+master_descending = ProductIO.readProduct(path_master_descending)
+slave_descending = ProductIO.readProduct(path_slave_descending)
 
 
 # Reading of the bands of the products
