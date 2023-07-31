@@ -21,6 +21,7 @@ e) snappy folder, which contains all the features to execute Snap2DQuake, includ
 
 
 PRODUCTS:
+
 a) Snap2DQuake file is the file containing the script, to directly copy-paste in your Python editor, and in which the user can find some instruction to know where to insert all the necessary input data.
 
 b) .xml files contain the graphs in .xml format to reproduce some operators of SNAP without using snappy. These processes are automatic. .xml files will be downloaded authomatically with all the other products. The user must put all the .xml files into a fixed folder with a easy path, that will be the same for each case study the user will analyse.
