@@ -34,6 +34,10 @@ import re
 cohwiaz =  # MAXIMUM ADVICED SIZE: 200
 cohwirg =  # MAXIMUM ADVICED SIZE: 250; BEST VALUES BETWEEN 10 AND 200
 
+# NUMBER OF RANGE LOOKS FOR MULTI-LOOKING
+ground_range_looks_ascending = 
+ground_range_looks_descending = 
+
 # GOLDSTEIN PHASE FILTERING
 fftsizestring =   # Choose between 32, 64, 128 and 256
 windowsizestring =  # Choose between 3, 5 and 7
@@ -872,6 +876,46 @@ else:
     else:
         print("\n.\nTOPSAR-Merge ascending performance failed.\n.\n.")
 
+
+
+#Multi-look
+bands = ""
+for i in list(deburst_ascending.getBandNames()):
+    bands = bands + i + ","
+
+if swath1 == swath2:
+    
+    flyer = bands[107:145]
+    phase = bands.replace(str(flyer), "")
+
+    parameters_multilook = HashMap()
+    parameters_multilook.put("grSquarePixel", "true")
+    parameters_multilook.put("nRgLooks", ground_range_looks_ascending)
+    parameters_multilook.put("sourceBands", str(phase))
+    parameters_multilook.put("outputIntensity", "false")
+    multilook_ascending = GPF.createProduct("Multilook", parameters_multilook, deburst_ascending)
+    output = Path.joinpath(path_products_ascending, "prova_multilook")
+    ProductIO.writeProduct(multilook_ascending, str(output), "BEAM-DIMAP")
+
+else:
+    flyer = bands[121:160]
+    phase = bands.replace(str(flyer), "")
+    print(phase)
+
+
+    parameters_multilook = HashMap()
+    parameters_multilook.put("grSquarePixel", "true")
+    parameters_multilook.put("nRgLooks", ground_range_looks_ascending)
+    parameters_multilook.put("sourceBands", str(phase))
+    parameters_multilook.put("outputIntensity", "false")
+    multilook_ascending = GPF.createProduct("Multilook", parameters_multilook, deburst_ascending)
+    output = Path.joinpath(path_products_ascending, "prova_multilook")
+    ProductIO.writeProduct(multilook_ascending, str(output), "BEAM-DIMAP")
+
+if multilook_ascending:
+    print("\n.\nMultilook ascending performed correctly!\n.\n.")
+else:
+     print("\n.\nMultilook ascending performance failed.\n.\n.")
 
 
 #GoldsteinPhaseFiltering ascending
@@ -1840,6 +1884,43 @@ else:
         print("\n.\nTOPSAR-Merge descending performed correctly!\n.\n.")
     else:
         print("\n.\nTOPSAR-Merge descending performance failed.\n.\n.")
+
+
+#Multi-look
+bands = ""
+for i in list(deburst_descending.getBandNames()):
+    bands = bands + i + ","
+
+if swath1 == swath2:
+    
+    flyer = bands[107:145]
+    phase = bands.replace(str(flyer), "")
+
+    parameters_multilook = HashMap()
+    parameters_multilook.put("grSquarePixel", "true")
+    parameters_multilook.put("nRgLooks", ground_range_looks_descending)
+    parameters_multilook.put("sourceBands", str(phase))
+    parameters_multilook.put("outputIntensity", "false")
+    multilook_descending = GPF.createProduct("Multilook", parameters_multilook, deburst_descending)
+
+
+else:
+    flyer = bands[121:160]
+    phase = bands.replace(str(flyer), "")
+    print(phase)
+
+
+    parameters_multilook = HashMap()
+    parameters_multilook.put("grSquarePixel", "true")
+    parameters_multilook.put("nRgLooks", ground_range_looks_descending)
+    parameters_multilook.put("sourceBands", str(phase))
+    parameters_multilook.put("outputIntensity", "false")
+    multilook_descending = GPF.createProduct("Multilook", parameters_multilook, deburst_descending)
+
+if multilook_descending:
+    print("\n.\nMultilook descending performed correctly!\n.\n.")
+else:
+     print("\n.\nMultilook descending performance failed.\n.\n.")
 
 #GoldsteinPhaseFiltering descending
 parameters_filtering_descending = HashMap()
