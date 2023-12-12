@@ -27,8 +27,13 @@ import re
 # - Path Master / Slave for both Ascending / Descending orbits
 # - Path of the directories where to put the products for ascending, descending, and final products
 # - Selection of the Area of Interest (AOI)
+# - Selection of the DEM ()
 # - In "INTERFEROGRAM FORMATION", the parameter "cohwinaz"
+# - In "MULTI-LOOK", the ground range looks
 # - In "GOLDSTEIN PHASE FILTER", the parameters "fftsizestring" and "windowsizestring"; "coherenceThreshold" and "useCoherenceMask" are setted for default, but they can be changed
+
+# DEM
+dem_name = #Insert here the DEM (External or from: "SRTM 3Sec", "SRTM 1Sec HGT", "CDEM", "Copernicus 30m Global DEM", "Copernicus 90m Global DEM", "GETASSE30")
 
 #INTERFEROGRAM FORMATION: INSERT HERE THE VALUE OF Coherence Window Azimuth and Range
 cohwiaz =  # MAXIMUM ADVICED SIZE: 200
@@ -626,7 +631,7 @@ else:
 # Back-Geocoding ascending
 if swath1 == swath2:  
     parameters_backgeocoding_ascending = HashMap()
-    parameters_backgeocoding_ascending.put("demName", "SRTM 3Sec")
+    parameters_backgeocoding_ascending.put("demName", dem_name)
     parameters_backgeocoding_ascending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
     parameters_backgeocoding_ascending.put("disableReramp", "false")
     parameters_backgeocoding_ascending.put("externalDEMNoDataValue", "0")
@@ -651,7 +656,7 @@ else:
     #REPETITION FOR BOTH SUBSWATHS
     #Back-Geocoding ascending (1)
     parameters_backgeocoding_ascending = HashMap()
-    parameters_backgeocoding_ascending.put("demName", "SRTM 3Sec")
+    parameters_backgeocoding_ascending.put("demName", dem_name)
     parameters_backgeocoding_ascending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
     parameters_backgeocoding_ascending.put("disableReramp", "false")
     parameters_backgeocoding_ascending.put("externalDEMNoDataValue", "0")
@@ -673,7 +678,7 @@ else:
 
 	#Back-Geocoding ascending (2)
     parameters_backgeocoding_ascending = HashMap()
-    parameters_backgeocoding_ascending.put("demName", "SRTM 3Sec")
+    parameters_backgeocoding_ascending.put("demName", dem_name)
     parameters_backgeocoding_ascending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
     parameters_backgeocoding_ascending.put("disableReramp", "false")
     parameters_backgeocoding_ascending.put("externalDEMNoDataValue", "0")
@@ -753,7 +758,7 @@ if swath1 == swath2:
     parameters_ifg_ascending = HashMap()
     parameters_ifg_ascending.put("cohWinAz", str(cohwiaz))
     parameters_ifg_ascending.put("cohWinRg", str(cohwirg))
-    parameters_ifg_ascending.put("demName", "SRTM 3Sec")
+    parameters_ifg_ascending.put("demName", dem_name)
     parameters_ifg_ascending.put("externalDEMApplyEGM", "true")
     parameters_ifg_ascending.put("externalDEMNoDataValue", "0")
     parameters_ifg_ascending.put("includeCoherence", "true")
@@ -780,7 +785,7 @@ else:
     parameters_ifg_ascending = HashMap()
     parameters_ifg_ascending.put("cohWinAz", str(cohwiaz)) 
     parameters_ifg_ascending.put("cohWinRg", str(cohwirg))
-    parameters_ifg_ascending.put("demName", "SRTM 3Sec")
+    parameters_ifg_ascending.put("demName", dem_name)
     parameters_ifg_ascending.put("externalDEMApplyEGM", "true")
     parameters_ifg_ascending.put("externalDEMNoDataValue", "0")
     parameters_ifg_ascending.put("includeCoherence", "true")
@@ -805,7 +810,7 @@ else:
     parameters_ifg_ascending = HashMap()
     parameters_ifg_ascending.put("cohWinAz", str(cohwiaz))
     parameters_ifg_ascending.put("cohWinRg", str(cohwirg))
-    parameters_ifg_ascending.put("demName", "SRTM 3Sec")
+    parameters_ifg_ascending.put("demName", dem_name)
     parameters_ifg_ascending.put("externalDEMApplyEGM", "true")
     parameters_ifg_ascending.put("externalDEMNoDataValue", "0")
     parameters_ifg_ascending.put("includeCoherence", "true")
@@ -1092,7 +1097,7 @@ else:
     parameters_tc_ascending.put("alignToStandardGrid", "false")
     parameters_tc_ascending.put("applyRadiometricNormalization", "false")
     parameters_tc_ascending.put("auxFile", "Latest Auxiliary File")
-    parameters_tc_ascending.put("demName", "SRTM 3Sec")
+    parameters_tc_ascending.put("demName", dem_name)
     parameters_tc_ascending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
     parameters_tc_ascending.put("externalDEMNoDataValue", "0")
     parameters_tc_ascending.put("imgResamplingMethod", "BILINEAR_INTERPOLATION")
@@ -1142,7 +1147,7 @@ parameters_tc_ascending = HashMap()
 parameters_tc_ascending.put("alignToStandardGrid", "false")
 parameters_tc_ascending.put("applyRadiometricNormalization", "false")
 parameters_tc_ascending.put("auxFile", "Latest Auxiliary File")
-parameters_tc_ascending.put("demName", "SRTM 3Sec")
+parameters_tc_ascending.put("demName", dem_name)
 parameters_tc_ascending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
 parameters_tc_ascending.put("externalDEMNoDataValue", "0")
 parameters_tc_ascending.put("imgResamplingMethod", "BILINEAR_INTERPOLATION")
@@ -1639,7 +1644,7 @@ else:
 #Back-Geocoding descending
 if swath1 == swath2:  
     parameters_backgeocoding_descending = HashMap()
-    parameters_backgeocoding_descending.put("demName", "SRTM 3Sec")
+    parameters_backgeocoding_descending.put("demName", dem_name)
     parameters_backgeocoding_descending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
     parameters_backgeocoding_descending.put("disableReramp", "false")
     parameters_backgeocoding_descending.put("externalDEMNoDataValue", "0")
@@ -1663,7 +1668,7 @@ else:
     #REPETITION FOR BOTH SUBSWATHS
     #Back-Geocoding descending (1)
     parameters_backgeocoding_descending = HashMap()
-    parameters_backgeocoding_descending.put("demName", "SRTM 3Sec")
+    parameters_backgeocoding_descending.put("demName", dem_name)
     parameters_backgeocoding_descending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
     parameters_backgeocoding_descending.put("disableReramp", "false")
     parameters_backgeocoding_descending.put("externalDEMNoDataValue", "0")
@@ -1685,7 +1690,7 @@ else:
 
 	#Back-Geocoding descending (2)
     parameters_backgeocoding_descending = HashMap()
-    parameters_backgeocoding_descending.put("demName", "SRTM 3Sec")
+    parameters_backgeocoding_descending.put("demName", dem_name)
     parameters_backgeocoding_descending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
     parameters_backgeocoding_descending.put("disableReramp", "false")
     parameters_backgeocoding_descending.put("externalDEMNoDataValue", "0")
@@ -1765,7 +1770,7 @@ if swath1 == swath2:
     parameters_ifg_descending = HashMap()
     parameters_ifg_descending.put("cohWinAz", str(cohwiaz)) 
     parameters_ifg_descending.put("cohWinRg", str(cohwirg))
-    parameters_ifg_descending.put("demName", "SRTM 3Sec")
+    parameters_ifg_descending.put("demName", dem_name)
     parameters_ifg_descending.put("externalDEMApplyEGM", "true")
     parameters_ifg_descending.put("externalDEMNoDataValue", "0")
     parameters_ifg_descending.put("includeCoherence", "true")
@@ -1790,7 +1795,7 @@ else:
     parameters_ifg_descending = HashMap()
     parameters_ifg_descending.put("cohWinAz", str(cohwiaz))
     parameters_ifg_descending.put("cohWinRg", str(cohwirg))
-    parameters_ifg_descending.put("demName", "SRTM 3Sec")
+    parameters_ifg_descending.put("demName", dem_name)
     parameters_ifg_descending.put("externalDEMApplyEGM", "true")
     parameters_ifg_descending.put("externalDEMNoDataValue", "0")
     parameters_ifg_descending.put("includeCoherence", "true")
@@ -1815,7 +1820,7 @@ else:
     parameters_ifg_descending = HashMap()
     parameters_ifg_descending.put("cohWinAz", str(cohwiaz)) 
     parameters_ifg_descending.put("cohWinRg", str(cohwirg))
-    parameters_ifg_descending.put("demName", "SRTM 3Sec")
+    parameters_ifg_descending.put("demName", dem_name)
     parameters_ifg_descending.put("externalDEMApplyEGM", "true")
     parameters_ifg_descending.put("externalDEMNoDataValue", "0")
     parameters_ifg_descending.put("includeCoherence", "true")
@@ -2041,7 +2046,7 @@ if swath1 == swath2:
     parameters_tc_descending.put("alignToStandardGrid", "false")
     parameters_tc_descending.put("applyRadiometricNormalization", "false")
     parameters_tc_descending.put("auxFile", "Latest Auxiliary File")
-    parameters_tc_descending.put("demName", "SRTM 3Sec")
+    parameters_tc_descending.put("demName", dem_name)
     parameters_tc_descending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
     parameters_tc_descending.put("externalDEMNoDataValue", "0")
     parameters_tc_descending.put("imgResamplingMethod", "BILINEAR_INTERPOLATION")
@@ -2091,7 +2096,7 @@ else:
     parameters_tc_descending.put("alignToStandardGrid", "false")
     parameters_tc_descending.put("applyRadiometricNormalization", "false")
     parameters_tc_descending.put("auxFile", "Latest Auxiliary File")
-    parameters_tc_descending.put("demName", "SRTM 3Sec")
+    parameters_tc_descending.put("demName", dem_name)
     parameters_tc_descending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
     parameters_tc_descending.put("externalDEMNoDataValue", "0")
     parameters_tc_descending.put("imgResamplingMethod", "BILINEAR_INTERPOLATION")
@@ -2142,7 +2147,7 @@ parameters_tc_descending = HashMap()
 parameters_tc_descending.put("alignToStandardGrid", "false")
 parameters_tc_descending.put("applyRadiometricNormalization", "false")
 parameters_tc_descending.put("auxFile", "Latest Auxiliary File")
-parameters_tc_descending.put("demName", "SRTM 3Sec")
+parameters_tc_descending.put("demName", dem_name)
 parameters_tc_descending.put("demResamplingMethod", "BILINEAR_INTERPOLATION")
 parameters_tc_descending.put("externalDEMNoDataValue", "0")
 parameters_tc_descending.put("imgResamplingMethod", "BILINEAR_INTERPOLATION")
