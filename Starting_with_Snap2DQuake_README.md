@@ -43,3 +43,6 @@ To start running the environment, from the Anaconda Home page select the enterpr
 
 
 Any new update will be available in this README.md file
+
+UPDATE 30-04-2024
+With the new update of SNAP software in ESA-SNAP 10, the code  is running into errors. We are working to solve the issue to furnish the upgraded products for Snap2DQuake. We're sorry for the problem, and for any question do not esitate to contact the authors.
