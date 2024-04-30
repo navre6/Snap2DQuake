@@ -42,6 +42,8 @@ To start running the environment, from the Anaconda Home page select the enterpr
 ![Screenshot 2023-07-25 094400](https://github.com/navre6/Snap2DQuake/assets/134698198/2e635954-d3d2-4208-a0f9-b148de23bc2e)
 
 
+To download snaphu algorithm for phase unwrapping, visit the url https://step.esa.int/main/snap-supported-plugins/snaphu/
+
 Any new update will be available in this README.md file
 
 UPDATE 30-04-2024
