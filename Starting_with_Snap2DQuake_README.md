@@ -1,7 +1,7 @@
 # Snap2DQuake
 
 BEFORE STARTING:
-Snappy needs to be continuously updated, so if some steps explained in this READ.ME regarding the interpreter and environment setting give strong problems, the authors advice to download SNAP ESA software from the link indicated in the paper Occhipinti et al. (2023) and to able the option "Python" during the installing process (see: https://senbox.atlassian.net/wiki/spaces/SNAP/pages/50855941/Configure+Python+to+use+the+SNAP-Python+snappy+interface+SNAP+versions+9)
+Snappy needs to be continuously updated, so if some steps explained in this READ.ME regarding the interpreter and environment setting give strong problems, the authors advice to download SNAP ESA software from the link indicated in the paper Occhipinti et al. (2023) and to able the option "Python" during the installing process (see:https://senbox.atlassian.net/wiki/spaces/SNAP/pages/2499051521/Configure+Python+to+use+the+new+SNAP-Python+esa+snappy+interface+SNAP+version+10)
 This will allow the user to have a new snap-python folder. ATTENTION: THIS EVENTUAL NEW FOLDER DOESN'T HAVE TO SUBSTITUTE THE ONE UPLOADED IN THIS REPOSITORY, because this latter contains saphu.exe, that isn't available in SNAP ESA software!!!
 
 -------------------
