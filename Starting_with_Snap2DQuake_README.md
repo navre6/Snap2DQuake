@@ -1,9 +1,15 @@
 # Snap2DQuake
 
 BEFORE STARTING:
-Snappy needs to be continuously updated, so if some steps explained in this READ.ME regarding the interpreter and environment setting give strong problems, the authors advice to download SNAP ESA software from the link indicated in the paper Occhipinti et al. (2023) and to able the option "Python" during the installing process (see:https://senbox.atlassian.net/wiki/spaces/SNAP/pages/2499051521/Configure+Python+to+use+the+new+SNAP-Python+esa+snappy+interface+SNAP+version+10)
-This will allow the user to have a new snap-python folder. ATTENTION: THIS EVENTUAL NEW FOLDER DOESN'T HAVE TO SUBSTITUTE THE ONE UPLOADED IN THIS REPOSITORY, because this latter contains saphu.exe, that isn't available in SNAP ESA software!!!
-
+Snappy needs to be continuously updated, so if some steps explained in this READ.ME regarding the interpreter and environment setting give strong problems, the authors advice to download SNAP ESA software from the link indicated in the paper Occhipinti et al. (2024) and to enable the option "Python" during the installing process (see:https://senbox.atlassian.net/wiki/spaces/SNAP/pages/2499051521/Configure+Python+to+use+the+new+SNAP-Python+esa+snappy+interface+SNAP+version+10)
+This will allow the user to have a new snap-python folder. 
+To download snaphu algorithm for phase unwrapping, visit the url https://step.esa.int/main/snap-supported-plugins/snaphu/
+UPDATE OF 03/05/2024: With the new upgrade of SNAP10, the folder "snappy" is not containing useful files anymore, as for the environment. The new module to use SNAP on Python is esa_snappy, which contains the same features of snappy. The configuration is a bit complex and you can find some tips on the page https://forum.step.esa.int/t/error-while-configuring-esa-snappy-with-python-3-9-13-on-windows-11-configuration-failed-no-error-code/42164
+The steps I personally did to enable this new version are:
+1)Creation of a new environment with Python 3.10.11 (the library works with this version of Python, or lower...)
+2)Installation of SNAP software enabling the option of SNAP-Python using the preferred python.exe. PERSONALLY: I use Anaconda, so I selected this Python: C:\Users\navre\anaconda3\python.exe
+3)Open a cmd, move to the directory of anaconda3\condabin and digit conda.bat activate [env] (env = name of the environment you chose)
+4)Move to esa-snap\bin directory and digit snappy-conf.bat <path of the python.exe>
 -------------------
 
 This repository contains all the elements needed to run Snap2DQuake.
@@ -17,7 +23,7 @@ c) snap.yaml
 
 d) an example of a snappy.properties file
 
-e) snappy folder, which contains all the features to execute Snap2DQuake, including snaphu.exe
+e) snappy folder, which contains all the features to execute Snap2DQuake
 
 
 PRODUCTS:
@@ -42,9 +48,4 @@ To start running the environment, from the Anaconda Home page select the enterpr
 ![Screenshot 2023-07-25 094400](https://github.com/navre6/Snap2DQuake/assets/134698198/2e635954-d3d2-4208-a0f9-b148de23bc2e)
 
 
-To download snaphu algorithm for phase unwrapping, visit the url https://step.esa.int/main/snap-supported-plugins/snaphu/
-
 Any new update will be available in this README.md file
-
-UPDATE 30-04-2024
-With the new update of SNAP software in ESA-SNAP 10, the code  is running into errors. We are working to solve the issue to furnish the upgraded products for Snap2DQuake. We're sorry for the problem, and for any question do not esitate to contact the authors.
