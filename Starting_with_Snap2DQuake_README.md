@@ -4,12 +4,17 @@ BEFORE STARTING:
 Snappy needs to be continuously updated, so if some steps explained in this READ.ME regarding the interpreter and environment setting give strong problems, the authors advice to download SNAP ESA software from the link indicated in the paper Occhipinti et al. (2024) and to enable the option "Python" during the installing process (see:https://senbox.atlassian.net/wiki/spaces/SNAP/pages/2499051521/Configure+Python+to+use+the+new+SNAP-Python+esa+snappy+interface+SNAP+version+10)
 This will allow the user to have a new snap-python folder. 
 To download snaphu algorithm for phase unwrapping, visit the url https://step.esa.int/main/snap-supported-plugins/snaphu/
-UPDATE OF 03/05/2024: With the new upgrade of SNAP10, the folder "snappy" is not containing useful files anymore, as for the environment. The new module to use SNAP on Python is esa_snappy, which contains the same features of snappy. The configuration is a bit complex and you can find some tips on the page https://forum.step.esa.int/t/error-while-configuring-esa-snappy-with-python-3-9-13-on-windows-11-configuration-failed-no-error-code/42164
+-------------------
+UPDATE OF 03/05/2024: With the new upgrade of SNAP10, the folder "snappy" is not containing useful files anymore, as for the environment. So please don't download it. The authors are providing the updated folder as soon as possible. The new module to use SNAP on Python is esa_snappy, which contains the same features of snappy. The configuration is a bit complex and you can find some tips on the page https://forum.step.esa.int/t/error-while-configuring-esa-snappy-with-python-3-9-13-on-windows-11-configuration-failed-no-error-code/42164
 The steps I personally did to enable this new version are:
-1)Creation of a new environment with Python 3.10.11 (the library works with this version of Python, or lower...)
-2)Installation of SNAP software enabling the option of SNAP-Python using the preferred python.exe. PERSONALLY: I use Anaconda, so I selected this Python: C:\Users\navre\anaconda3\python.exe
-3)Open a cmd, move to the directory of anaconda3\condabin and digit conda.bat activate [env] (env = name of the environment you chose)
-4)Move to esa-snap\bin directory and digit snappy-conf.bat <path of the python.exe>
+1) Creation of a new environment with Python 3.10.11 (the library works with this version of Python, or lower...)
+2) Installation of SNAP software enabling the option of SNAP-Python using the preferred python.exe. PERSONALLY: I use Anaconda, so I selected this Python: C:\Users\navre\anaconda3\python.exe
+3) Open a cmd, move to the directory of anaconda3\condabin and digit conda.bat activate [env] (env = name of the environment you chose)
+4) Move to esa-snap\bin directory and digit snappy-conf.bat <path of the python.exe>
+5) Now, opening python with the environment that you created, you should be able to do import esa_snappy.
+6) If it's not possible, on 5) put the path of the python.exe from your environment and try the step 6)
+
+It's a bit confusing, but we're trying to work everyday on it to solve the issue, to explain it easily and to update the code. Sorry for the inconvenience.
 -------------------
 
 This repository contains all the elements needed to run Snap2DQuake.
