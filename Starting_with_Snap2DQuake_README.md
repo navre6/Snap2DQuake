@@ -14,7 +14,7 @@ The steps I personally did to enable this new version are:
 5) Now, opening python with the environment that you created, you should be able to do import esa_snappy.
 6) If it's not possible, on 5) put the path of the python.exe from your environment and try the step 6)
 
-It's a bit confusing, but we're trying to work everyday on it to solve the issue, to explain it easily and to update the code. Sorry for the inconvenience.
+It's a bit confusing, but we're trying to work everyday on it to better understand the installation process. Regarding the code, after the correct importing of esa_snappy, the ONLY necessary modification step is the substitution of "snappy" with "esa_snappy". ProductIO, and all the other features of the module are still available and the code doesn't need any customization.
 -------------------
 
 This repository contains all the elements needed to run Snap2DQuake.
