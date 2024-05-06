@@ -17,8 +17,8 @@ from PIL import Image
 sys.path.append("") # import of the environment requested for SNAP -- Please INSERT THE PROPER PATH OF THE ENVIRONMENT
 sys.path.append("") # import of the libraries for the environment -- Please INSERT THE PROPER PATH 
 sys.path.append("") # import of snappy, the module for interacting with SNAP Java API -- Please INSERT THE PROPER PATH
-import snappy
-from snappy import Product, ProductIO, ProductUtils, GPF, HashMap, jpy
+import esa_snappy
+from esa_snappy import Product, ProductIO, ProductUtils, GPF, HashMap, jpy
 from lxml import etree as et
 import re
 
