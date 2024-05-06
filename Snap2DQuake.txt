@@ -1,4 +1,4 @@
-from asyncore import read
+from pyasyncore import read
 import gdal
 import glob
 from zipfile import ZipFile
