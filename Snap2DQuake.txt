@@ -96,7 +96,7 @@ for x in first_path:
     second_path = path_master_file1.replace(str(x), "")
 zip_dot = ".zip"
 third_path = second_path.replace(str(zip_dot), "")
-fourth_path = third_path + "/manifest.safe"
+fourth_path = third_path + ".SAFE/manifest.safe"
 
 folder_product = ZipFile(path_master_file1, 'r')
 for x in folder_product.namelist():
@@ -116,7 +116,7 @@ for x in first_path:
     second_path = path_master_file2.replace(str(x), "")
 zip_dot = ".zip"
 third_path = second_path.replace(str(zip_dot), "")
-fourth_path = third_path + "/manifest.safe"
+fourth_path = third_path + ".SAFE/manifest.safe"
 
 folder_product = ZipFile(path_master_file2, 'r')
 for x in folder_product.namelist():
@@ -136,7 +136,7 @@ for x in first_path:
     second_path = path_slave_file1.replace(str(x), "")
 zip_dot = ".zip"
 third_path = second_path.replace(str(zip_dot), "")
-fourth_path = third_path + "/manifest.safe"
+fourth_path = third_path + ".SAFE/manifest.safe"
 
 folder_product = ZipFile(path_slave_file1, 'r')
 for x in folder_product.namelist():
@@ -156,7 +156,7 @@ for x in first_path:
     second_path = path_slave_file2.replace(str(x), "")
 zip_dot = ".zip"
 third_path = second_path.replace(str(zip_dot), "")
-fourth_path = third_path + "/manifest.safe"
+fourth_path = third_path + ".SAFE/manifest.safe"
 
 folder_product = ZipFile(path_slave_file2, 'r')
 for x in folder_product.namelist():
