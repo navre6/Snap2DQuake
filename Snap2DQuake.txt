@@ -1,9 +1,6 @@
 from asyncore import read
 import gdal
 import glob
-import matplotlib.colors as colors
-import matplotlib.image as mpimg
-import matplotlib.pyplot as plt
 from zipfile import ZipFile
 from os.path import join
 from glob import iglob
@@ -13,7 +10,6 @@ import numpy as np
 import subprocess
 import sys
 import os
-from PIL import Image
 sys.path.append("") # import of the environment requested for SNAP -- Please INSERT THE PROPER PATH OF THE ENVIRONMENT
 sys.path.append("") # import of the libraries for the environment -- Please INSERT THE PROPER PATH 
 sys.path.append("") # import of snappy, the module for interacting with SNAP Java API -- Please INSERT THE PROPER PATH
