@@ -5,7 +5,7 @@ Snappy needs to be continuously updated, so if some steps explained in this READ
 This will allow the user to have a new snap-python folder. 
 To download snaphu algorithm for phase unwrapping, visit the url https://step.esa.int/main/snap-supported-plugins/snaphu/
 -------------------
-UPDATE OF 06/05/2024: With the new upgrade of SNAP10, the folder "snappy" is not containing useful files anymore, as for the environment. So please don't download it. The authors are providing the updated folder as soon as possible. The new module to use SNAP on Python is esa_snappy, which contains the same features of snappy. The configuration is a bit complex and you can find some tips on the page https://forum.step.esa.int/t/error-while-configuring-esa-snappy-with-python-3-9-13-on-windows-11-configuration-failed-no-error-code/42164
+UPDATE OF 06/05/2024: With the new upgrade of SNAP10, the folder "snappy" is not containing useful files anymore, as for the environment (now "DEPRECATED_FILE"). So please don't download it. The new module to use SNAP on Python is esa_snappy, which contains the same features of snappy. The configuration is a bit complex and you can find some tips on the page https://forum.step.esa.int/t/error-while-configuring-esa-snappy-with-python-3-9-13-on-windows-11-configuration-failed-no-error-code/42164
 The steps I personally did to enable this new version are:
 1) Creation of a new environment with Python 3.10.11 (the library works with this version of Python, or lower...)
 2) Installation of SNAP software enabling the option of SNAP-Python using the preferred python.exe. PERSONALLY: I use Anaconda, so I selected this Python: C:\Users\navre\anaconda3\python.exe
@@ -14,9 +14,11 @@ The steps I personally did to enable this new version are:
 5) Now, opening python with the environment that you created, you should be able to do import esa_snappy.
 6) If it's not possible, on 5) put the path of the python.exe from your environment and try the step 6)
 7) When  running the environment, if there are problems with JVM, set "conda env config vars set JAVA_HOME="C:\Program Files\esa-snap\jre", and then, set "env config vars set SNAP_HOME="C:\Program Files\esa-snap"
-
+8) Install in your environment all the libraries indicated in the code (e.g., pip install numpy)
+9) Run the code
 
 It's a bit confusing, but we're trying to work everyday on it to better understand the installation process. Regarding the code, after the correct importing of esa_snappy, the ONLY necessary modification step is the substitution of "snappy" with "esa_snappy". ProductIO, and all the other features of the module are still available and the code doesn't need any customization.
+PLEASE, DO NOT ESITATE TO CONTACT US FOR ANY ISSUE: martina.occhipinti@dottorandi.unipg.it
 -------------------
 
 This repository contains all the elements needed to run Snap2DQuake.
