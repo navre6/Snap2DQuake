@@ -14,7 +14,7 @@ sys.path.append("") # import of the environment requested for SNAP -- Please INS
 sys.path.append("") # import of the libraries for the environment -- Please INSERT THE PROPER PATH 
 sys.path.append("") # import of snappy, the module for interacting with SNAP Java API -- Please INSERT THE PROPER PATH
 import esa_snappy
-from esa_snappy import Product, ProductIO, ProductUtils, GPF, HashMap, jpy
+from esa_snappy import Product, ProductIO, GeoUtils, GPF, HashMap, jpy
 from lxml import etree as et
 import re
 
@@ -36,8 +36,8 @@ cohwiaz =  # MAXIMUM ADVICED SIZE: 200
 cohwirg =  # MAXIMUM ADVICED SIZE: 250; BEST VALUES BETWEEN 10 AND 200
 
 # NUMBER OF RANGE LOOKS FOR MULTI-LOOKING (TO KNOW THESE VALUES, TAKE THE VALUES OF RANGE SPACING AND AZIMUTH SPACING FROM THE ABSTRACTED METADATA FOR EVERY COUPLE OF DATA AND COMPUTE THE PROPORTION: range spacing:azimuth spacing = 1:1). THE RESULT (APPROXIMATION TO AN ENTIRE NUMBER) HAS TO BE INSERTED BELOW.
-ground_range_looks_ascending = 
-ground_range_looks_descending = 
+ground_range_looks_ascending = ""
+ground_range_looks_descending = ""
 
 # GOLDSTEIN PHASE FILTERING
 fftsizestring =   # Choose between 32, 64, 128 and 256
@@ -241,7 +241,7 @@ def get_extent(product):
 	step = 1
 	min_longitude = 999.99
 
-	position = ProductUtils.createGeoBoundary(master_ascending, step)
+	position = GeoUtils.createGeoBoundary(master_ascending, step)
 
 	max_longitude = -min_longitude
 	min_latitude = min_longitude
@@ -292,7 +292,7 @@ def get_extent(product):
 	step = 1
 	min_longitude = 999.99
 
-	position = ProductUtils.createGeoBoundary(slave_ascending, step)
+	position = GeoUtils.createGeoBoundary(slave_ascending, step)
 
 	max_longitude = -min_longitude
 	min_latitude = min_longitude
@@ -1217,7 +1217,7 @@ def get_extent(product):
 	step = 1
 	min_longitude = 999.99
 
-	position = ProductUtils.createGeoBoundary(master_descending, step)
+	position = GeoUtils.createGeoBoundary(master_descending, step)
 
 	max_longitude = -min_longitude
 	min_latitude = min_longitude
@@ -1268,7 +1268,7 @@ def get_extent(product):
 	step = 1
 	min_longitude = 999.99
 
-	position = ProductUtils.createGeoBoundary(slave_descending, step)
+	position = GeoUtils.createGeoBoundary(slave_descending, step)
 
 	max_longitude = -min_longitude
 	min_latitude = min_longitude
