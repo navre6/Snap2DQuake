@@ -1,3 +1,0 @@
-jdl
-jpy
-jpyutil
