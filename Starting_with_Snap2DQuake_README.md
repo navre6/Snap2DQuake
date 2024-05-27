@@ -46,5 +46,5 @@ To start running the environment, from the Anaconda Home page select the enterpr
 
 ![Screenshot 2023-07-25 094400](https://github.com/navre6/Snap2DQuake/assets/134698198/2e635954-d3d2-4208-a0f9-b148de23bc2e)
 
-
+An error that commonly occurs is the heading space. In that case, when the ascending part of processing is completed, you can delete the files in "ascending" folder, EXCEPT FOR THE TERRAIN CORRECTION.DIM AND .DATA (and the .tif, obviously!)
 Any new update will be available in this README.md file
