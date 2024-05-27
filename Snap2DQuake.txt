@@ -1,20 +1,21 @@
-from pyasyncore import read
-import gdal
-import glob
+import esa_snappy
+from esa_snappy import Product, ProductData, ProductIO, HashMap, GPF, GeoUtils
 from zipfile import ZipFile
 from os.path import join
 from glob import iglob
 from pathlib import Path
+#import pandas as pd
 import numpy as np
 import subprocess
 import sys
-import os
+import os 
+from lxml import etree as et
+import re
+import jpy
+import glob
 sys.path.append("") # import of the environment requested for SNAP -- Please INSERT THE PROPER PATH OF THE ENVIRONMENT
 sys.path.append("") # import of the libraries for the environment -- Please INSERT THE PROPER PATH 
 sys.path.append("") # import of snappy, the module for interacting with SNAP Java API -- Please INSERT THE PROPER PATH
-import esa_snappy
-from esa_snappy import Product, ProductIO, GeoUtils, GPF, HashMap, jpy
-from lxml import etree as et
 import re
 
 # COMPLETE WORKFLOW TO OBTAIN DISPLACEMENT MAPS IN LOS AND 2 DIRECTIONS (E-W COMPONENT AND VERTICAL COMPONENTS) USING DINSAR ON SENTINEL-1 AND WITH SNAP OPERATORS
@@ -885,7 +886,7 @@ for i in list(deburst_ascending.getBandNames()):
 
 if swath1 == swath2:
     
-    flyer = bands[107:145]
+    flyer = bands[107:143]
     phase = bands.replace(str(flyer), "")
 
     parameters_multilook = HashMap()
@@ -1893,7 +1894,7 @@ for i in list(deburst_descending.getBandNames()):
 
 if swath1 == swath2:
     
-    flyer = bands[107:145]
+    flyer = bands[107:143]
     phase = bands.replace(str(flyer), "")
 
     parameters_multilook = HashMap()
