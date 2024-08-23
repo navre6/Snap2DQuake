@@ -236,30 +236,35 @@ def get_min_max(current, min_value, max_value):
 	return [min_value, max_value]
 
 def get_extent(product):
-	# Get corner coordinates of the ESA SNAP product (get extent)
-	# int step - the step given in pixels
-	step = 1
-	min_longitude = 999.99
+    geo_ref = master_descending.getSceneGeoCoding()
+    width = master_descending.getSceneRasterWidth()
+    height = master_descending.getSceneRasterHeight()
 
-	position = GeoUtils.createGeoBoundary(master_ascending, step)
 
-	max_longitude = -min_longitude
-	min_latitude = min_longitude
-	max_latitude = max_longitude
-	for element in position:
-		try:
-			longitude = element.getLon()
-			[min_longitude, max_longitude] = get_min_max(longitude, min_longitude, max_longitude)
-		except(NameError):
-			print(NameError)
-			pass
-		try:
-			latitude = element.getLat()
-			[min_latitude, max_latitude] = get_min_max(latitude, min_latitude, max_latitude)
-		except(NameError):
-			print(NameError)
-			pass
-	return [min_longitude, max_longitude, min_latitude, max_latitude]
+    def get_geographic_coordinates(geo_ref, col, row):
+        pixel_pos = PixelPos(col, row)
+        geo_coords = geo_ref.getGeoPos(pixel_pos, None)
+        return geo_coords.getLon(), geo_coords.getLat()
+
+
+    min_longitude, min_latitude = float('inf'), float('inf')
+    max_longitude, max_latitude = float('-inf'), float('-inf')
+
+
+    corners = [
+        (0, 0),  
+        (width-1, 0), 
+        (0, height-1),  
+        (width-1, height-1)  
+    ]
+    
+    for (col, row) in corners:
+        lon, lat = get_geographic_coordinates(geo_ref, col, row)
+        min_longitude = min(min_longitude, lon)
+        max_longitude = max(max_longitude, lon)
+        min_latitude = min(min_latitude, lat)
+        max_latitude = max(max_latitude, lat)
+
 
 def find_nearest(array, value):
 	distance_lat = []
@@ -287,30 +292,36 @@ def get_min_max(current, min_value, max_value):
 	return [min_value, max_value]
 
 def get_extent(product):
-	# Get corner coordinates of the ESA SNAP product (get extent)
-	# int step - the step given in pixels
-	step = 1
-	min_longitude = 999.99
+    geo_ref = slave_descending.getSceneGeoCoding()
+    width = slave_descending.getSceneRasterWidth()
+    height = slave_descending.getSceneRasterHeight()
 
-	position = GeoUtils.createGeoBoundary(slave_ascending, step)
 
-	max_longitude = -min_longitude
-	min_latitude = min_longitude
-	max_latitude = max_longitude
-	for element in position:
-		try:
-			longitude = element.getLon()
-			[min_longitude, max_longitude] = get_min_max(longitude, min_longitude, max_longitude)
-		except(NameError):
-			print(NameError)
-			pass
-		try:
-			latitude = element.getLat()
-			[min_latitude, max_latitude] = get_min_max(latitude, min_latitude, max_latitude)
-		except(NameError):
-			print(NameError)
-			pass
-	return [min_longitude, max_longitude, min_latitude, max_latitude]
+    def get_geographic_coordinates(geo_ref, col, row):
+        pixel_pos = PixelPos(col, row)
+        geo_coords = geo_ref.getGeoPos(pixel_pos, None)
+        return geo_coords.getLon(), geo_coords.getLat()
+
+
+    min_longitude, min_latitude = float('inf'), float('inf')
+    max_longitude, max_latitude = float('-inf'), float('-inf')
+
+
+    corners = [
+        (0, 0),  
+        (width-1, 0), 
+        (0, height-1),  
+        (width-1, height-1)  
+    ]
+    
+    for (col, row) in corners:
+        lon, lat = get_geographic_coordinates(geo_ref, col, row)
+        min_longitude = min(min_longitude, lon)
+        max_longitude = max(max_longitude, lon)
+        min_latitude = min(min_latitude, lat)
+        max_latitude = max(max_latitude, lat)
+
+
 
 def find_nearest(array, value):
 	distance_lat = []
