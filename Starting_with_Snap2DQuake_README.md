@@ -26,7 +26,9 @@ PLEASE, DO NOT ESITATE TO CONTACT US FOR ANY ISSUE: martina.occhipinti@dottorand
 -------------------
 UPDATE OF 22/08/2024:
 esa_snappy has been updates to 10.1, beware on setting it up orrectly. If new in esa_snappy, consult the latest topics on this url https://forum.step.esa.int/t/error-while-configuring-esa-snappy-with-python-3-9-13-on-windows-11-configuration-failed-no-error-code/42164 to a better explanation of the installing process,since you do NOT neet to configure esa_snappy Python as for the previous versions. Some issues might be solved, but the necessary Python is still the 3.10 version. 
-
+-------------------
+UPDATE OF 23/08/2024:
+The code has been modified, check your version.
 --------------------
 This repository contains all the elements needed to run Snap2DQuake.
 In the repository, the user can find:
