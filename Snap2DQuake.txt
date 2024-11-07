@@ -91,12 +91,12 @@ min_lat_aoi =
 
 # Check of the effective data -- if the inserted data's pass is effectively ascending or descending and association of new variables for each orbit
 # Association of variables for master products
-first_path = (re.findall("(.*)S1", path_master_file1))
+first_path = (re.findall(r"\bS1\w+\.SAFE.zip\b", path_master_file1))
 for x in first_path:
-    second_path = path_master_file1.replace(str(x), "")
+    second_path = x
 zip_dot = ".zip"
 third_path = second_path.replace(str(zip_dot), "")
-fourth_path = third_path + ".SAFE/manifest.safe"
+fourth_path = third_path + "/manifest.safe"
 
 folder_product = ZipFile(path_master_file1, 'r')
 for x in folder_product.namelist():
@@ -111,12 +111,12 @@ else:
     path_master_descending = path_master_file1
 
 
-first_path = (re.findall("(.*)S1", path_master_file2))
+first_path = (re.findall(r"\bS1\w+\.SAFE.zip\b", path_master_file2))
 for x in first_path:
-    second_path = path_master_file2.replace(str(x), "")
+    second_path = x
 zip_dot = ".zip"
 third_path = second_path.replace(str(zip_dot), "")
-fourth_path = third_path + ".SAFE/manifest.safe"
+fourth_path = third_path + "/manifest.safe"
 
 folder_product = ZipFile(path_master_file2, 'r')
 for x in folder_product.namelist():
@@ -131,12 +131,12 @@ else:
     path_master_descending = path_master_file2
 
 # Association of variables for slave products
-first_path = (re.findall("(.*)S1", path_slave_file1))
+first_path = (re.findall(r"\bS1\w+\.SAFE.zip\b", path_slave_file1))
 for x in first_path:
-    second_path = path_slave_file1.replace(str(x), "")
+    second_path = x
 zip_dot = ".zip"
 third_path = second_path.replace(str(zip_dot), "")
-fourth_path = third_path + ".SAFE/manifest.safe"
+fourth_path = third_path + "/manifest.safe"
 
 folder_product = ZipFile(path_slave_file1, 'r')
 for x in folder_product.namelist():
@@ -151,12 +151,12 @@ else:
     path_slave_descending = path_slave_file1
 
 
-first_path = (re.findall("(.*)S1", path_slave_file2))
+first_path = (re.findall(r"\bS1\w+\.SAFE.zip\b", path_slave_file2))
 for x in first_path:
-    second_path = path_slave_file2.replace(str(x), "")
+    second_path = x
 zip_dot = ".zip"
 third_path = second_path.replace(str(zip_dot), "")
-fourth_path = third_path + ".SAFE/manifest.safe"
+fourth_path = third_path + "/manifest.safe"
 
 folder_product = ZipFile(path_slave_file2, 'r')
 for x in folder_product.namelist():
