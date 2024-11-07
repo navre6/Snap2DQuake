@@ -242,7 +242,7 @@ def get_extent(product):
 
 
     def get_geographic_coordinates(geo_ref, col, row):
-        pixel_pos = PixelPos(col, row)
+        pixel_pos = pixel_pos(col, row)
         geo_coords = geo_ref.getGeoPos(pixel_pos, None)
         return geo_coords.getLon(), geo_coords.getLat()
 
@@ -298,7 +298,7 @@ def get_extent(product):
 
 
     def get_geographic_coordinates(geo_ref, col, row):
-        pixel_pos = PixelPos(col, row)
+        pixel_pos = pixel_pos(col, row)
         geo_coords = geo_ref.getGeoPos(pixel_pos, None)
         return geo_coords.getLon(), geo_coords.getLat()
 
