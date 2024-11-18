@@ -1,3 +1,5 @@
+#  ***SNAP2DQuake***  by Occhipinti et al. (2023)
+
 import esa_snappy
 from esa_snappy import Product, ProductData, ProductIO, HashMap, GPF, GeoUtils
 from zipfile import ZipFile
