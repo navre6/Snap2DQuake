@@ -1,4 +1,8 @@
-#  ***SNAP2DQuake***  by Occhipinti et al. (2023)
+#  ***SNAP2DQuake***  
+# by Occhipinti M., Carboni F., Amorini S., Paltriccia N., López-Martínez C., Porreca M.
+
+# COMPLETE WORKFLOW TO OBTAIN DISPLACEMENT MAPS IN LOS AND 2 DIRECTIONS (E-W COMPONENT AND VERTICAL COMPONENTS) USING DINSAR ON SENTINEL-1 AND WITH SNAP OPERATORS
+
 
 import esa_snappy
 from esa_snappy import Product, ProductData, ProductIO, HashMap, GPF, GeoUtils
@@ -20,7 +24,6 @@ sys.path.append("") # import of the libraries for the environment -- Please INSE
 sys.path.append("") # import of snappy, the module for interacting with SNAP Java API -- Please INSERT THE PROPER PATH
 import re
 
-# COMPLETE WORKFLOW TO OBTAIN DISPLACEMENT MAPS IN LOS AND 2 DIRECTIONS (E-W COMPONENT AND VERTICAL COMPONENTS) USING DINSAR ON SENTINEL-1 AND WITH SNAP OPERATORS
 # THE TOOL IS COMPLETELY AUTOMATIC. THE ONLY PARAMETERS TO INSERT MANUALLY ARE:
 # - Path Master / Slave for both Ascending / Descending orbits
 # - Path of the directories where to put the products for ascending, descending, and final products
